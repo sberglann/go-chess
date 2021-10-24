@@ -18,5 +18,7 @@ const FileC = uint64(0x404040404040404)
 const FileB = uint64(0x202020202020202)
 const FileA = uint64(0x101010101010101)
 
+const Max64 = uint64(0xFFFFFFFFFFFFFFFF)
+
 const BlackSquares = uint64(0xAA55AA55AA55AA55)
 const WhiteSquares = uint64(0x55AA55AA55AA55AA)

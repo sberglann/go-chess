@@ -1,20 +1,15 @@
 package main
 
-var promotionFlags = []int{
-	int(0x4),
-	int(0x5),
-	int(0x6),
-	int(0x7),
-}
+var promotionFlags = []int{4, 5, 6, 7}
 
-func KingMasks() {
+func KingMasks() []uint16 {
 	offsets := [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
-	GenerateStaticMasks(offsets, 0, 64)
+	return GenerateStaticMasks(offsets, 0, 64)
 }
 
-func KnightMasks() {
+func KnightMasks() []uint16 {
 	offsets := [][2]int{{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}}
-	GenerateStaticMasks(offsets, 0, 64)
+	return GenerateStaticMasks(offsets, 0, 64)
 }
 
 func WhitePawnStraightMasks() []uint16 {
@@ -24,29 +19,35 @@ func WhitePawnStraightMasks() []uint16 {
 	return append(nonPromotingMoves, promotingMoves...)
 }
 
-func WhitePawnDoubleMasks() {
+func WhitePawnDoubleMasks() []uint16 {
 	offsets := [][2]int{{2, 0}}
-	GenerateStaticMasks(offsets, 8, 16)
+	return GenerateStaticMasks(offsets, 8, 16)
 }
 
-func WhitePawnAttackMasks() {
+func WhitePawnAttackMasks() []uint16 {
 	offsets := [][2]int{{1, -1}, {1, 1}}
-	GenerateStaticMasks(offsets, 8, 56)
+	nonPromotingMoves := GenerateStaticMasks(offsets, 8, 48)
+	promotingMoves := GenerateStaticMasksWithFlags(offsets, 48, 56, promotionFlags)
+	return append(nonPromotingMoves, promotingMoves...)
 }
 
-func BlackPawnDoubleMasks() {
+func BlackPawnDoubleMasks() []uint16 {
 	offsets := [][2]int{{-2, 0}}
-	GenerateStaticMasks(offsets, 48, 56)
+	return GenerateStaticMasks(offsets, 48, 56)
 }
 
-func BlackPawnStraightMasks() {
+func BlackPawnStraightMasks() []uint16 {
 	offsets := [][2]int{{-1, 0}}
-	GenerateStaticMasks(offsets, 8, 56)
+	nonPromotingMoves := GenerateStaticMasks(offsets, 16, 56)
+	promotingMoves := GenerateStaticMasks(offsets, 8, 16)
+	return append(nonPromotingMoves, promotingMoves...)
 }
 
-func BlackPawnAttackMasks() {
+func BlackPawnAttackMasks() []uint16 {
 	offsets := [][2]int{{-1, -1}, {-1, 1}}
-	GenerateStaticMasks(offsets, 8, 56)
+	nonPromotingMoves := GenerateStaticMasks(offsets, 16, 56)
+	promotingMoves := GenerateStaticMasks(offsets, 8, 16)
+	return append(nonPromotingMoves, promotingMoves...)
 }
 
 func GenerateStaticMasks(offsets [][2]int, from int, to int) []uint16 {
