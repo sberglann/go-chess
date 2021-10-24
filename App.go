@@ -1,14 +1,15 @@
 package main
 
+import "fmt"
+
 type Color int
 
 func main() {
 
-
 	board := StartBoard()
 	KingMoves(*board)
-	BlackPawnStraightMasks()
+	mvs := WhitePawnStraightMasks()
+	fmt.Println(len(mvs))
 	board.PrettyBoard()
+
 }
-
-

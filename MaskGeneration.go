@@ -1,5 +1,12 @@
 package main
 
+var promotionFlags = []int{
+	int(0x4),
+	int(0x5),
+	int(0x6),
+	int(0x7),
+}
+
 func KingMasks() {
 	offsets := [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
 	GenerateStaticMasks(offsets, 0, 64)
@@ -10,9 +17,11 @@ func KnightMasks() {
 	GenerateStaticMasks(offsets, 0, 64)
 }
 
-func WhitePawnStraightMasks() {
+func WhitePawnStraightMasks() []uint16 {
 	offsets := [][2]int{{1, 0}}
-	GenerateStaticMasks(offsets, 8, 56)
+	nonPromotingMoves := GenerateStaticMasks(offsets, 8, 48)
+	promotingMoves := GenerateStaticMasksWithFlags(offsets, 48, 56, promotionFlags)
+	return append(nonPromotingMoves, promotingMoves...)
 }
 
 func WhitePawnDoubleMasks() {
@@ -40,12 +49,16 @@ func BlackPawnAttackMasks() {
 	GenerateStaticMasks(offsets, 8, 56)
 }
 
-func GenerateStaticMasks(offsets [][2]int, from int, to int) {
-	generate := func(i int) {
+func GenerateStaticMasks(offsets [][2]int, from int, to int) []uint16 {
+	standardFlags := []int{0}
+	return GenerateStaticMasksWithFlags(offsets, from, to, standardFlags)
+}
+
+func GenerateStaticMasksWithFlags(offsets [][2]int, from int, to int, flags []int) []uint16 {
+	generateEndPosition := func(i int) []int {
 		baseRank, baseFile := IndexToCartesian(i)
 
 		var indices []int
-		var board uint64
 
 		for _, offset := range offsets {
 			rank := baseRank + offset[0]
@@ -55,14 +68,23 @@ func GenerateStaticMasks(offsets [][2]int, from int, to int) {
 			}
 		}
 
-		for _, index := range indices {
-			board |= 1 << index
+		return indices
+	}
+
+	var moves []uint16
+
+	for start := from; start < to; start++ {
+		for _, end := range generateEndPosition(start) {
+			for _, flag := range flags {
+				startBits := uint16(start)
+				endBits := uint16(end) << 6
+				flagBits := uint16(flag) << 12
+
+				move := startBits | endBits | flagBits
+				moves = append(moves, move)
+			}
 		}
-		Pretty64(board)
 	}
 
-	for i := from; i < to; i++ {
-		generate(i)
-
-	}
+	return moves
 }
