@@ -1,18 +1,25 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type Color int
 
 func main() {
 
-	res := IndexToUint64(7, 2, uint64(4))
+	magic := uint64(72101608930526208)
+	blockers := uint64(math.Pow(2, 17) + math.Pow(2, 53))
 
-	fmt.Println(res)
+	key := blockers * magic >> 57
+	Pretty64(key)
+	fmt.Println(key)
+
+	Pretty64(uint64(9025933902745632))
+
 	board := StartBoard()
 	KingMoves(*board)
-	mvs := WhitePawnStraightMasks()
-	fmt.Println(len(mvs))
 	board.PrettyBoard()
 
 }

@@ -36,7 +36,11 @@ func Pretty64(number uint64) {
 			pos := i*8 + j
 			bit := BitAt64(&number, pos)
 			fmt.Print(" ")
-			fmt.Print(bit)
+			if bit == 1 {
+				fmt.Print("1")
+			} else {
+				fmt.Print(".")
+			}
 			fmt.Print(" ")
 		}
 		fmt.Println()

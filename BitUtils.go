@@ -51,11 +51,10 @@ func NumberOfOnes(n uint64) int {
 
 func IndexToUint64(pos int, bits int, m uint64) uint64 {
 	result := uint64(0)
-	toPop := m
 	for i := 0; i < bits; i++ {
-		j, popped := PopFistBit(toPop)
-		toPop = popped
-		if pos&(1<<i) > 0 && j >= 0 {
+		j, popped := PopFistBit(m)
+		m = popped
+		if pos & (1 << i) > 0 && j >= 0 {
 			result |= 1 << j
 		}
 	}
