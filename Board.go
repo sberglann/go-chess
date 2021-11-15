@@ -32,17 +32,17 @@ type BitBoard struct {
 
 func StartBoard() *BitBoard {
 	// @fmt:off
-	white 	 := uint64(0x000000000008ffff)
-	black 	 := uint64(0xffff000000000000)
+	white := uint64(0x000000000008ffff)
+	black := uint64(0xffff000000000000)
 	invWhite := uint64(0xfffffffffff70000)
 	invBlack := uint64(0x0000ffffffffffff)
-	pawns 	 := uint64(0x00ff00000000ff00)
-	knights  := uint64(0x4200000000000042)
-	bishops  := uint64(0x2400000000000024)
-	rooks 	 := uint64(0x8100000000000081)
-	queens   := uint64(0x0800000000000008)
-	kings    := uint64(0x1000000000000010)
-	flags    := uint32(0x000001FE)
+	pawns := uint64(0x00ff00000000ff00)
+	knights := uint64(0x4200000000000042)
+	bishops := uint64(0x2400000000000024)
+	rooks := uint64(0x8100000000000081)
+	queens := uint64(0x0800000000000008)
+	kings := uint64(0x1000000000000010)
+	flags := uint32(0x000001FE)
 
 	// @fmt:on
 
@@ -58,6 +58,14 @@ func StartBoard() *BitBoard {
 		QueenBB:        queens,
 		KingBB:         kings,
 		Flags:          flags,
+	}
+}
+
+func (b BitBoard) TurnBoard() uint64 {
+	if b.Turn() == White {
+		return b.WhiteBB
+	} else {
+		return b.BlackBB
 	}
 }
 
@@ -123,4 +131,3 @@ func (b *BitBoard) PrettyBoard() {
 		fmt.Println()
 	}
 }
-

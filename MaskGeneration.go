@@ -2,9 +2,12 @@ package main
 
 var promotionFlags = []int{4, 5, 6, 7}
 
-func KingMasks() []uint16 {
+func KingMasks() map[int][]uint16 {
+	var mapping map[int][]uint16
 	offsets := [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
-	return GenerateStaticMasks(offsets, 0, 64)
+	for i, mask := range GenerateStaticMasks(offsets, 0, 64) {
+		mapping[i] = mask
+	}
 }
 
 func KnightMasks() []uint16 {
