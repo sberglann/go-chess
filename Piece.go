@@ -26,8 +26,8 @@ type ColoredPiece struct {
 }
 
 func (p ColoredPiece) toUnicode() string {
-	if p.piece == Empty {
-		return " "
+	if p.piece == Empty || p.color == Blank {
+		return "·"
 	} else if p.piece == Pawn && p.color == White {
 		return "♙"
 	} else if p.piece == Pawn && p.color == Black {

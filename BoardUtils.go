@@ -2,6 +2,8 @@ package main
 
 import "fmt"
 
+var posToBitBoard = PosToBitBoard()
+
 func IndexToCartesian(pos int) (int, int) {
 	rank := pos/8 + 1
 	file := pos%8 + 1

@@ -1,5 +1,9 @@
 package main
 
+import (
+	"math"
+)
+
 var promotionFlags = []int{4, 5, 6, 7}
 
 func KingMasks() map[int][]Move {
@@ -93,8 +97,17 @@ func GenerateStaticMasksWithFlags(offsets [][2]int, from int, to int, flags []in
 	return moves
 }
 
+// Creates a mapping from index to the uint64 one-hot representation of the number.
+func PosToBitBoard() map[int]uint64 {
+	var mapping = make(map[int]uint64)
+	for i := 0; i < 64; i++ {
+		mapping[i] = uint64(math.Pow(2, float64(i)))
+	}
+	return mapping
+}
+
 func mergeMoveMaps(a map[int][]Move, b map[int][]Move, from int, to int) map[int][]Move {
-	var merged map[int][]Move
+	merged := make(map[int][]Move)
 	for i := from; i < to; i++ {
 		merged[i] = append(a[i], b[i]...)
 	}

@@ -1,11 +1,17 @@
 package main
 
+import "fmt"
+
 type Color int
 
 func main() {
 	b := StartBoard()
-	ms := KingMoves(*b)
+	b.PrettyBoard()
+	ms := PawnMoves(b)
 	for _, m := range ms {
-		PrettyMove(b.WhiteBB, m)
+		b.Transition(m, ColoredPiece{piece: Pawn, color: White}).PrettyBoard()
+		fmt.Println()
+		fmt.Println("-----------------------")
+		fmt.Println()
 	}
 }
