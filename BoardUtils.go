@@ -2,7 +2,6 @@ package main
 
 import "fmt"
 
-
 func IndexToCartesian(pos int) (int, int) {
 	rank := pos/8 + 1
 	file := pos%8 + 1
@@ -37,6 +36,30 @@ func Pretty64(number uint64) {
 			bit := BitAt64(&number, pos)
 			fmt.Print(" ")
 			if bit == 1 {
+				fmt.Print("1")
+			} else {
+				fmt.Print(".")
+			}
+			fmt.Print(" ")
+		}
+		fmt.Println()
+	}
+}
+
+func PrettyMove(baseBoard uint64, move Move) {
+	origin := move.Origin()
+	destination := move.Destination()
+	fmt.Println("------------------------")
+	for i := 7; i >= 0; i-- {
+		for j := 0; j < 8; j++ {
+			pos := i*8 + j
+			bit := BitAt64(&baseBoard, pos)
+			fmt.Print(" ")
+			if pos == origin {
+				fmt.Print("O")
+			} else if pos == destination {
+				fmt.Print("X")
+			} else if bit == 1 {
 				fmt.Print("1")
 			} else {
 				fmt.Print(".")

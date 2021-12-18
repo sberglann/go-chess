@@ -20,7 +20,7 @@ func (m Move) Destination() int {
 }
 
 func (m Move) Origin() int {
-	return int(m.bits & 0x0FC0)
+	return int(m.bits & 0x0FC0 >> 6)
 }
 
 func (m Move) Promotion() Piece {

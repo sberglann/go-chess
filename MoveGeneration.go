@@ -4,34 +4,25 @@ import "fmt"
 
 var existing_entries = KingMasks()
 
-func GenerateMoves(bb BitBoard) []Move {
-	var turnBoard uint64
-	turn := bb.Turn()
-	if turn == White {
-		turnBoard = bb.WhiteBB
-	} else {
-		turnBoard = bb.BlackBB
-	}
-
-}
-
-func KingMoves(bb BitBoard) {
+func KingMoves(bb BitBoard) []Move {
 	kings := bb.KingBB & bb.TurnBoard()
-	for kings > 0 {
+	if kings > 0 {
 		pos, newKings := PopFistBit(kings)
 		kings = newKings
-		KingMasks
-	}
-	if cp := bb.PieceAt(19); cp.piece == King {
-		toAnd := uint64(0x000000001C141C00)
-		Pretty64(toAnd)
-		fmt.Println()
-		fmt.Println()
-		switch cp.color {
-		case White:
-			Pretty64(bb.InverseWhiteBB & toAnd)
-		case Black:
-			Pretty64(bb.InverseBlackBB & toAnd)
+		moves := existing_entries[pos]
+		var validMoves []Move
+		for _, m := range moves {
+			if IsValid(bb, m) {
+				validMoves = append(validMoves, m)
+			}
 		}
+		return validMoves
+	} else {
+		fmt.Println("No king on board :S.")
+		return nil
 	}
+}
+
+func IsValid(bb BitBoard, m Move) bool {
+	return bb.PieceAt(m.Destination()).color != bb.Turn()
 }

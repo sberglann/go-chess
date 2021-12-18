@@ -3,5 +3,9 @@ package main
 type Color int
 
 func main() {
-	Pretty64(RookAttacks(27, 0))
+	b := StartBoard()
+	ms := KingMoves(*b)
+	for _, m := range ms {
+		PrettyMove(b.WhiteBB, m)
+	}
 }

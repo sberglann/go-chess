@@ -32,9 +32,9 @@ type BitBoard struct {
 
 func StartBoard() *BitBoard {
 	// @fmt:off
-	white := uint64(0x000000000008ffff)
+	white := uint64(0x000000000000ffff)
 	black := uint64(0xffff000000000000)
-	invWhite := uint64(0xfffffffffff70000)
+	invWhite := uint64(0xfffffffffff00000)
 	invBlack := uint64(0x0000ffffffffffff)
 	pawns := uint64(0x00ff00000000ff00)
 	knights := uint64(0x4200000000000042)
