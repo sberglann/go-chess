@@ -56,5 +56,4 @@ func (p ColoredPiece) toUnicode() string {
 		fmt.Printf("No piece found for %d %d", p.piece, p.color)
 		return " "
 	}
-
 }

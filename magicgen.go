@@ -238,5 +238,4 @@ func GenerateMagics() {
 			fmt.Println("Finding magic for ", piece, " at square ", square)
 		}
 	}
-
 }

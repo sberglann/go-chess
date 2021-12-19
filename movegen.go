@@ -8,6 +8,65 @@ var blackPawnAttackMasks = BlackPawnAttackMasks()
 var blackPawnDoubleMasks = BlackPawnDoubleMasks()
 var blackPawnStraightMasks = BlackPawnStraightMasks()
 
+func Transition(b BitBoard, m Move, piece ColoredPiece) BitBoard {
+
+	origin := m.Origin()
+	destination := m.Destination()
+	originBB := posToBitBoard[origin]
+	destinationBB := posToBitBoard[destination]
+
+	makeMove := func(bitboard uint64) uint64 {
+		return (bitboard &^ originBB) | destinationBB
+	}
+
+	makeMoveInverse := func(bitboard uint64) uint64 {
+		return (bitboard | originBB) &^ destinationBB
+	}
+
+	moveOrPass := func(currentPiece Piece, pieceBB uint64) uint64 {
+		if piece.piece == currentPiece {
+			return makeMove(pieceBB)
+		} else {
+			return pieceBB
+		}
+	}
+
+	var WhiteBB, BlackBB, InverseWhiteBB, InverseBlackBB, PawnBB, KnightBB, BishopBB, RookBB, QueenBB, KingBB uint64
+
+	if piece.color == White {
+		WhiteBB = makeMove(b.WhiteBB)
+		InverseWhiteBB = makeMoveInverse(b.InverseWhiteBB)
+		BlackBB = b.BlackBB
+		InverseBlackBB = b.InverseBlackBB
+	} else {
+		BlackBB = makeMove(b.BlackBB)
+		InverseBlackBB = makeMoveInverse(b.InverseBlackBB)
+		WhiteBB = b.WhiteBB
+		InverseWhiteBB = b.InverseWhiteBB
+	}
+
+	PawnBB = moveOrPass(Pawn, b.PawnBB)
+	KnightBB = moveOrPass(Knight, b.KnightBB)
+	BishopBB = moveOrPass(Bishop, b.BishopBB)
+	RookBB = moveOrPass(Rook, b.RookBB)
+	QueenBB = moveOrPass(Queen, b.QueenBB)
+	KingBB = moveOrPass(King, b.KingBB)
+
+	return BitBoard{
+		WhiteBB:        WhiteBB,
+		BlackBB:        BlackBB,
+		InverseWhiteBB: InverseWhiteBB,
+		InverseBlackBB: InverseBlackBB,
+		PawnBB:         PawnBB,
+		KnightBB:       KnightBB,
+		BishopBB:       BishopBB,
+		RookBB:         RookBB,
+		QueenBB:        QueenBB,
+		KingBB:         KingBB,
+		Flags:          b.Flags,
+	}
+}
+
 func KingMoves(bb BitBoard) []Move {
 	var validMoves []Move
 	kings := bb.KingBB & bb.TurnBoard()
