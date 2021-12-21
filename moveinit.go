@@ -2,9 +2,97 @@ package main
 
 import (
 	"math"
+	"strconv"
+	"strings"
 )
 
+type MagicKey struct {
+	Square, Key int
+}
+
 var promotionFlags = []int{4, 5, 6, 7}
+
+func BishopMasks() map[int]uint64 {
+	var mapping = make(map[int]uint64)
+	for i := 0; i < 64; i++ {
+		mapping[i] = GenerateBishopMask(i)
+	}
+	return mapping
+}
+
+func BishopMagics() map[int]uint64 {
+	var mapping = make(map[int]uint64)
+	lines, _ := ReadLines("move_tables/magics_bishop.txt")
+	for _, line := range lines {
+		split := strings.Split(line, ";")
+		pos, _ := strconv.Atoi(split[0])
+		magic, _ := strconv.ParseUint(split[1], 10, 64)
+		mapping[pos] = magic
+	}
+	return mapping
+}
+
+func BishopBits() map[int]int {
+	var mapping = make(map[int]int)
+	for i, bits := range BishopBitsArray {
+		mapping[i] = bits
+	}
+	return mapping
+}
+
+func BishopMoveTable() map[MagicKey]uint64 {
+	var mapping = make(map[MagicKey]uint64)
+	lines, _ := ReadLines("move_tables/bishop.txt")
+	for _, line := range lines {
+		split := strings.Split(line, ";")
+		pos, _ := strconv.Atoi(split[0])
+		key, _ := strconv.Atoi(split[1])
+		move, _ := strconv.ParseUint(split[2], 10, 64)
+		mapping[MagicKey{Square: pos, Key: key}] = move
+	}
+	return mapping
+}
+
+func RookMasks() map[int]uint64 {
+	var mapping = make(map[int]uint64)
+	for i := 0; i < 64; i++ {
+		mapping[i] = GenerateRookMask(i)
+	}
+	return mapping
+}
+
+func RookMagics() map[int]uint64 {
+	var mapping = make(map[int]uint64)
+	lines, _ := ReadLines("move_tables/magics_rook.txt")
+	for _, line := range lines {
+		split := strings.Split(line, ";")
+		pos, _ := strconv.Atoi(split[0])
+		magic, _ := strconv.ParseUint(split[1], 10, 64)
+		mapping[pos] = magic
+	}
+	return mapping
+}
+
+func RookBits() map[int]int {
+	var mapping = make(map[int]int)
+	for i, bits := range RookBitsArray {
+		mapping[i] = bits
+	}
+	return mapping
+}
+
+func RookMoveTable() map[MagicKey]uint64 {
+	var mapping = make(map[MagicKey]uint64)
+	lines, _ := ReadLines("move_tables/rook.txt")
+	for _, line := range lines {
+		split := strings.Split(line, ";")
+		pos, _ := strconv.Atoi(split[0])
+		key, _ := strconv.Atoi(split[1])
+		move, _ := strconv.ParseUint(split[2], 10, 64)
+		mapping[MagicKey{Square: pos, Key: key}] = move
+	}
+	return mapping
+}
 
 func KingMasks() map[int][]Move {
 	offsets := [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}

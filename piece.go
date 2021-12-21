@@ -3,6 +3,7 @@ package main
 import "fmt"
 
 type Piece int
+type Color int
 
 const (
 	Empty Piece = iota - 1
@@ -19,6 +20,18 @@ const (
 	White
 	Black
 )
+
+func (c Color) Opposite() Color {
+	switch c {
+	case Black:
+		return White
+	case White:
+		return Black
+	case Blank:
+		return Blank
+	}
+	return Blank
+}
 
 type ColoredPiece struct {
 	piece Piece

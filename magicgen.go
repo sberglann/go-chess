@@ -7,7 +7,7 @@ import (
 )
 
 // https://www.chessprogramming.org/index.php?title=Looking_for_Magics
-var RookBits = [64]int{
+var RookBitsArray = [64]int{
 	12, 11, 11, 11, 11, 11, 11, 12,
 	11, 10, 10, 10, 10, 10, 10, 11,
 	11, 10, 10, 10, 10, 10, 10, 11,
@@ -18,7 +18,7 @@ var RookBits = [64]int{
 	12, 11, 11, 11, 11, 11, 11, 12,
 }
 
-var BishopBits = [64]int{
+var BishopBitsArray = [64]int{
 	6, 5, 5, 5, 5, 5, 5, 6,
 	5, 5, 5, 5, 5, 5, 5, 5,
 	5, 5, 7, 7, 7, 7, 5, 5,
@@ -37,7 +37,7 @@ func RandomFewBits() uint64 {
 	return RandomUint64() & RandomUint64() & RandomUint64()
 }
 
-func RookMask(pos int) uint64 {
+func GenerateRookMask(pos int) uint64 {
 	result := uint64(0)
 	rank := pos / 8
 	file := pos % 8
@@ -57,7 +57,7 @@ func RookMask(pos int) uint64 {
 	return result
 }
 
-func BishopMask(pos int) uint64 {
+func GenerateBishopMask(pos int) uint64 {
 	result := uint64(0)
 	rank := pos / 8
 	file := pos % 8
@@ -152,9 +152,9 @@ func FindMagic(square int, numBits int, piece Piece) uint64 {
 	existing_entries := make(map[string]bool)
 
 	if piece == Bishop {
-		mask = BishopMask(square)
+		mask = GenerateBishopMask(square)
 	} else {
-		mask = RookMask(square)
+		mask = GenerateRookMask(square)
 	}
 	n := NumberOfOnes(mask)
 
@@ -228,9 +228,9 @@ func GenerateMagics() {
 	for _, piece := range pieces {
 		var bitCounts [64]int
 		if piece == Rook {
-			bitCounts = RookBits
+			bitCounts = RookBitsArray
 		} else {
-			bitCounts = BishopBits
+			bitCounts = BishopBitsArray
 		}
 		for square := 0; square < 64; square++ {
 			magic := FindMagic(square, bitCounts[square], piece)

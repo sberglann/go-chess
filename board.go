@@ -31,11 +31,11 @@ type BitBoard struct {
 }
 
 var StartBoard = BitBoard{
-	WhiteBB:        uint64(0x000000000000ffff),
+	WhiteBB:        uint64(0x000000000000feff),
 	BlackBB:        uint64(0xffff000000000000),
 	InverseWhiteBB: uint64(0xfffffffffff00000),
 	InverseBlackBB: uint64(0x0000ffffffffffff),
-	PawnBB:         uint64(0x00ff00000000ff00),
+	PawnBB:         uint64(0x00ff00000000fe00),
 	KnightBB:       uint64(0x4200000000000042),
 	BishopBB:       uint64(0x2400000000000024),
 	RookBB:         uint64(0x8100000000000081),
@@ -80,7 +80,7 @@ func (b *BitBoard) PieceAt(pos int) ColoredPiece {
 	} else if isPopulated(&b.BlackBB, pos) {
 		color = Black
 	} else {
-		color = Blank
+		return ColoredPiece{color: Blank, piece: Empty}
 	}
 
 	if isPopulated(&b.PawnBB, pos) {
