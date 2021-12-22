@@ -13,13 +13,13 @@ var debruijnIndices = [64]int{
 var debruijn64 = uint64(0x03f79d71b4cb0a89)
 
 // Gets the bit at position pos, an integer in [0, 63]
-func BitAt64(i *uint64, pos int) int {
-	return int((*i >> uint64(pos)) & 1)
+func BitAt64(i uint64, pos int) int {
+	return int((i >> uint64(pos)) & 1)
 }
 
 // Gets the bit at position pos, an integer in [0, 63]
-func BitAt32(i *uint32, pos int) int {
-	return int((*i >> uint32(pos)) & 1)
+func BitAt32(i uint32, pos int) int {
+	return int((i >> uint32(pos)) & 1)
 }
 
 func LSB(i uint64) int {
@@ -54,7 +54,7 @@ func IndexToUint64(pos int, bits int, m uint64) uint64 {
 	for i := 0; i < bits; i++ {
 		j, popped := PopFistBit(m)
 		m = popped
-		if pos & (1 << i) > 0 && j >= 0 {
+		if pos&(1<<i) > 0 && j >= 0 {
 			result |= 1 << j
 		}
 	}

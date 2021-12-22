@@ -31,6 +31,7 @@ type BitBoard struct {
 	// Bit 	   8: Whether or not black can castle king-side.
 	// Bit 	   9: Whether or not black can castle queen-side.
 	// Bit 10-16: The count since the last piece capture or pawn move. if this counter passes 100, the game is draw.
+	// Bit 	 17-31: The move counter. Incremented after black has moved.
 	Flags uint32
 }
 
@@ -56,15 +57,15 @@ func (b BitBoard) TurnBoard() uint64 {
 	}
 }
 
-func (b *BitBoard) Turn() Color {
-	if value := BitAt32(&b.Flags, 0); value == 0 {
+func (b BitBoard) Turn() Color {
+	if value := BitAt32(b.Flags, 0); value == 0 {
 		return White
 	} else {
 		return Black
 	}
 }
 
-func (b *BitBoard) EnPassantFile() int {
+func (b BitBoard) EnPassantFile() int {
 	if value := b.Flags >> 1 & 0xF; value > 7 {
 		return -1
 	} else {
@@ -72,32 +73,32 @@ func (b *BitBoard) EnPassantFile() int {
 	}
 }
 
-func (b *BitBoard) PieceAt(pos int) ColoredPiece {
-	isPopulated := func(bb *uint64, pos int) bool {
+func (b BitBoard) PieceAt(pos int) ColoredPiece {
+	isPopulated := func(bb uint64, pos int) bool {
 		return BitAt64(bb, pos) == 1
 	}
 	var color Color
 	var piece Piece
 
-	if isPopulated(&b.WhiteBB, pos) {
+	if isPopulated(b.WhiteBB, pos) {
 		color = White
-	} else if isPopulated(&b.BlackBB, pos) {
+	} else if isPopulated(b.BlackBB, pos) {
 		color = Black
 	} else {
 		return ColoredPiece{color: Blank, piece: Empty}
 	}
 
-	if isPopulated(&b.PawnBB, pos) {
+	if isPopulated(b.PawnBB, pos) {
 		piece = Pawn
-	} else if isPopulated(&b.KnightBB, pos) {
+	} else if isPopulated(b.KnightBB, pos) {
 		piece = Knight
-	} else if isPopulated(&b.BishopBB, pos) {
+	} else if isPopulated(b.BishopBB, pos) {
 		piece = Bishop
-	} else if isPopulated(&b.RookBB, pos) {
+	} else if isPopulated(b.RookBB, pos) {
 		piece = Rook
-	} else if isPopulated(&b.QueenBB, pos) {
+	} else if isPopulated(b.QueenBB, pos) {
 		piece = Queen
-	} else if isPopulated(&b.KingBB, pos) {
+	} else if isPopulated(b.KingBB, pos) {
 		piece = King
 	} else {
 		piece = Empty
@@ -117,6 +118,89 @@ func (b BitBoard) PrettyBoard() {
 		}
 		fmt.Println()
 	}
+}
+
+func (b BitBoard) ToFEN() string {
+	var rankStrings []string
+	var rankLetters string
+	for rank := 8; rank > 0; rank-- {
+		emptyCounter := 0
+		rankLetters = ""
+		for file := 1; file <= 8; file++ {
+			pos := CartesianToIndex(rank, file)
+			piece := b.PieceAt(pos)
+			if piece.color == Blank {
+				emptyCounter += 1
+			} else {
+				if emptyCounter > 0 {
+					rankLetters += strconv.Itoa(emptyCounter)
+					emptyCounter = 0
+				}
+				if piece.color == Black {
+					rankLetters += piece.piece.Letter()
+				} else {
+					rankLetters += strings.ToUpper(piece.piece.Letter())
+				}
+			}
+			if emptyCounter > 0 && file == 8 {
+				rankLetters += strconv.Itoa(emptyCounter)
+				emptyCounter = 0
+			}
+		}
+		rankStrings = append(rankStrings, rankLetters)
+	}
+	pieceString := strings.Join(rankStrings, "/")
+	activeColor := b.Turn().Letter()
+
+	var castlingRightLetters []string
+	if BitAt32(b.Flags, 6) == 1 {
+		castlingRightLetters = append(castlingRightLetters, "K")
+	}
+	if BitAt32(b.Flags, 7) == 1 {
+		castlingRightLetters = append(castlingRightLetters, "Q")
+	}
+	if BitAt32(b.Flags, 8) == 1 {
+		castlingRightLetters = append(castlingRightLetters, "k")
+	}
+	if BitAt32(b.Flags, 9) == 1 {
+		castlingRightLetters = append(castlingRightLetters, "q")
+	}
+
+	var castlingRights string
+	if len(castlingRightLetters) > 0 {
+		castlingRights = strings.Join(castlingRightLetters, "")
+	} else {
+		castlingRights = "-"
+	}
+
+	var enPassentString string
+	enPessantFile := int(b.Flags >> 1 & uint32(15))
+	if enPessantFile > 7 {
+		enPassentString = "-"
+	} else {
+		// The file number is 0-indexed, while the mapping is 1-indexed.
+		file := FileToLetter[enPessantFile+1]
+		if b.Turn() == White {
+			// Black moved previous turn, and the pawn rank is 6
+			enPassentString = file + "6"
+		} else {
+			enPassentString = file + "3"
+		}
+	}
+
+	halfMoveClock := int(b.Flags >> 10 & uint32(127))
+	moveCounter := int(b.Flags >> 17)
+
+	values := []string{
+		pieceString,
+		activeColor,
+		castlingRights,
+		enPassentString,
+		strconv.Itoa(halfMoveClock),
+		strconv.Itoa(moveCounter),
+	}
+
+	return strings.Join(values, " ")
 }
 
 var posToBitBoard = PosToBitBoard()
@@ -140,10 +224,12 @@ func BoardFromFEN(fen string) BitBoard {
 	castling := split[2]
 	enPassent := split[3]
 	halfMoveClockRaw := split[4]
-	// fullMoveNumber := split[5] This isn't currently used.
+	fullMoveNumberRaw := split[5]
 
 	halfMoveClock, _ := strconv.Atoi(halfMoveClockRaw)
+	fullMoveNumber, _ := strconv.Atoi(fullMoveNumberRaw)
 	flags |= uint32(halfMoveClock) << 10
+	flags |= uint32(fullMoveNumber) << 17
 
 	if activeColor := split[1]; activeColor == "b" {
 		flags |= uint32(1)
@@ -262,7 +348,7 @@ func Pretty64(number uint64) {
 	for i := 7; i >= 0; i-- {
 		for j := 0; j < 8; j++ {
 			pos := i*8 + j
-			bit := BitAt64(&number, pos)
+			bit := BitAt64(number, pos)
 			fmt.Print(" ")
 			if bit == 1 {
 				fmt.Print("1")
