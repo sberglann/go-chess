@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 type BitBoard struct {
 	// Bit boards for colors
@@ -126,6 +130,131 @@ func IndexToCartesian(pos int) (int, int) {
 
 func CartesianToIndex(rank int, file int) int {
 	return (rank-1)*8 + file - 1
+}
+
+func BoardFromFEN(fen string) BitBoard {
+	var whiteBB, blackBB, inverseWhiteBB, inverseBlackBB, pawnBB, knightBB, bishopBB, rookBB, queenBB, kingBB uint64
+	var flags uint32
+	split := strings.Split(fen, " ")
+	pieces := split[0]
+	castling := split[2]
+	enPassent := split[3]
+	halfMoveClockRaw := split[4]
+	// fullMoveNumber := split[5] This isn't currently used.
+
+	halfMoveClock, _ := strconv.Atoi(halfMoveClockRaw)
+	flags |= uint32(halfMoveClock) << 10
+
+	if activeColor := split[1]; activeColor == "b" {
+		flags |= uint32(1)
+	}
+	switch {
+	case strings.Contains(enPassent, "a"):
+		flags |= uint32(0) << 1
+	case strings.Contains(enPassent, "b"):
+		flags |= uint32(1) << 1
+	case strings.Contains(enPassent, "c"):
+		flags |= uint32(2) << 1
+	case strings.Contains(enPassent, "d"):
+		flags |= uint32(3) << 1
+	case strings.Contains(enPassent, "e"):
+		flags |= uint32(4) << 1
+	case strings.Contains(enPassent, "f"):
+		flags |= uint32(5) << 1
+	case strings.Contains(enPassent, "g"):
+		flags |= uint32(6) << 1
+	case strings.Contains(enPassent, "h"):
+		flags |= uint32(7) << 1
+	default:
+		flags |= uint32(8) << 1
+	}
+
+	if strings.Contains(castling, "K") {
+		flags |= uint32(1) << 6
+	}
+	if strings.Contains(castling, "Q") {
+		flags |= uint32(1) << 7
+	}
+	if strings.Contains(castling, "k") {
+		flags |= uint32(1) << 8
+	}
+	if strings.Contains(castling, "q") {
+		flags |= uint32(1) << 9
+	}
+
+	piecesByRank := strings.Split(pieces, "/")
+	for rankIndex, rankLetters := range piecesByRank {
+
+		// FEN is given with rank 8 first. Subtract the rankIndex to obtain the correct rank.
+		rank := 8 - rankIndex
+		letterIndex := 0
+		file := 1
+		for file <= 8 {
+			pos := CartesianToIndex(rank, file)
+			value := rankLetters[letterIndex]
+			letterIndex += 1
+			file += 1
+			switch {
+			case value == 'p':
+				blackBB |= (1 << pos)
+				pawnBB |= (1 << pos)
+			case value == 'n':
+				blackBB |= (1 << pos)
+				knightBB |= (1 << pos)
+			case value == 'b':
+				blackBB |= (1 << pos)
+				bishopBB |= (1 << pos)
+			case value == 'r':
+				blackBB |= (1 << pos)
+				rookBB |= (1 << pos)
+			case value == 'q':
+				blackBB |= (1 << pos)
+				queenBB |= (1 << pos)
+			case value == 'k':
+				blackBB |= (1 << pos)
+				kingBB |= (1 << pos)
+			case value == 'P':
+				whiteBB |= (1 << pos)
+				pawnBB |= (1 << pos)
+			case value == 'N':
+				whiteBB |= (1 << pos)
+				knightBB |= (1 << pos)
+			case value == 'B':
+				whiteBB |= (1 << pos)
+				bishopBB |= (1 << pos)
+			case value == 'R':
+				whiteBB |= (1 << pos)
+				rookBB |= (1 << pos)
+			case value == 'Q':
+				whiteBB |= (1 << pos)
+				queenBB |= (1 << pos)
+			case value == 'K':
+				whiteBB |= (1 << pos)
+				kingBB |= (1 << pos)
+			default:
+				numEmpty, _ := strconv.Atoi(string(value))
+				file += numEmpty - 1
+			}
+		}
+	}
+	inverseWhiteBB = ^whiteBB
+	inverseBlackBB = ^blackBB
+
+	board := BitBoard{
+		WhiteBB:        whiteBB,
+		BlackBB:        blackBB,
+		InverseWhiteBB: inverseWhiteBB,
+		InverseBlackBB: inverseBlackBB,
+		PawnBB:         pawnBB,
+		KnightBB:       knightBB,
+		BishopBB:       bishopBB,
+		RookBB:         rookBB,
+		QueenBB:        queenBB,
+		KingBB:         kingBB,
+		Flags:          flags,
+	}
+
+	return board
 }
 
 func Pretty64(number uint64) {
