@@ -36,11 +36,11 @@ type BitBoard struct {
 }
 
 var StartBoard = BitBoard{
-	WhiteBB:        uint64(0x000000000000feff),
+	WhiteBB:        uint64(0x000000000000ffff),
 	BlackBB:        uint64(0xffff000000000000),
 	InverseWhiteBB: uint64(0xfffffffffff00000),
 	InverseBlackBB: uint64(0x0000ffffffffffff),
-	PawnBB:         uint64(0x00ff00000000fe00),
+	PawnBB:         uint64(0x00ff00000000ff00),
 	KnightBB:       uint64(0x4200000000000042),
 	BishopBB:       uint64(0x2400000000000024),
 	RookBB:         uint64(0x8100000000000081),

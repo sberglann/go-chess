@@ -21,8 +21,30 @@ var blackPawnDoubleMoves = BlackPawnDoubleMasks()
 var blackPawnStraightMoves = BlackPawnStraightMasks()
 var knightMoves = KnightMasks()
 
-func Transition(b BitBoard, m Move, piece ColoredPiece) BitBoard {
+func GenerateLegalMoves(b BitBoard) []BitBoard {
+	var nextStates []BitBoard
+	for _, m := range PawnMoves(b) {
+		nextStates = append(nextStates, Transition(b, m, Pawn))
+	}
+	for _, m := range KnightMoves(b) {
+		nextStates = append(nextStates, Transition(b, m, Knight))
+	}
+	for _, m := range BishopMoves(b) {
+		nextStates = append(nextStates, Transition(b, m, Bishop))
+	}
+	for _, m := range RookMoves(b) {
+		nextStates = append(nextStates, Transition(b, m, Rook))
+	}
+	for _, m := range QueenMoves(b) {
+		nextStates = append(nextStates, Transition(b, m, Queen))
+	}
+	for _, m := range KingMoves(b) {
+		nextStates = append(nextStates, Transition(b, m, King))
+	}
+	return nextStates
+}
 
+func Transition(b BitBoard, m Move, piece Piece) BitBoard {
 	origin := m.Origin()
 	destination := m.Destination()
 	originBB := posToBitBoard[origin]
@@ -37,7 +59,7 @@ func Transition(b BitBoard, m Move, piece ColoredPiece) BitBoard {
 	}
 
 	moveOrPass := func(currentPiece Piece, pieceBB uint64) uint64 {
-		if piece.piece == currentPiece {
+		if piece == currentPiece {
 			return makeMove(pieceBB)
 		} else {
 			return pieceBB
@@ -46,7 +68,7 @@ func Transition(b BitBoard, m Move, piece ColoredPiece) BitBoard {
 
 	var WhiteBB, BlackBB, InverseWhiteBB, InverseBlackBB, PawnBB, KnightBB, BishopBB, RookBB, QueenBB, KingBB uint64
 
-	if piece.color == White {
+	if b.Turn() == White {
 		WhiteBB = makeMove(b.WhiteBB)
 		InverseWhiteBB = makeMoveInverse(b.InverseWhiteBB)
 		BlackBB = b.BlackBB
@@ -76,7 +98,7 @@ func Transition(b BitBoard, m Move, piece ColoredPiece) BitBoard {
 		RookBB:         RookBB,
 		QueenBB:        QueenBB,
 		KingBB:         KingBB,
-		Flags:          b.Flags,
+		Flags:          b.Flags ^ uint32(1),
 	}
 }
 
