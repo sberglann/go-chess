@@ -37,41 +37,60 @@ func RandomFewBits() uint64 {
 	return RandomUint64() & RandomUint64() & RandomUint64()
 }
 
-func GenerateRookMask(pos int) uint64 {
+// With includeEdges=false, the masks for the outermost squares will not be considered.
+// This is to save key space when generatic magics.
+func GenerateRookMask(pos int, includeEdges bool) uint64 {
 	result := uint64(0)
 	rank := pos / 8
 	file := pos % 8
+	var upperLimit, lowerLimit int
+	if includeEdges {
+		upperLimit = 7
+		lowerLimit = 0
+	} else {
+		upperLimit = 6
+		lowerLimit = 1
+	}
 
-	for r := rank + 1; r <= 6; r++ {
+	for r := rank + 1; r <= upperLimit; r++ {
 		result |= uint64(1) << (file + r*8)
 	}
-	for r := rank - 1; r >= 1; r-- {
+	for r := rank - 1; r >= lowerLimit; r-- {
 		result |= uint64(1) << (file + r*8)
 	}
-	for f := file + 1; f <= 6; f++ {
+	for f := file + 1; f <= upperLimit; f++ {
 		result |= uint64(1) << (f + rank*8)
 	}
-	for f := file - 1; f >= 1; f-- {
+	for f := file - 1; f >= lowerLimit; f-- {
 		result |= uint64(1) << (f + rank*8)
 	}
 	return result
 }
 
-func GenerateBishopMask(pos int) uint64 {
+// With includeEdges=false, the masks for the outermost squares will not be considered.
+// This is to save key space when generatic magics.
+func GenerateBishopMask(pos int, includeEdges bool) uint64 {
 	result := uint64(0)
 	rank := pos / 8
 	file := pos % 8
-
-	for r, f := rank+1, file+1; r <= 6 && f <= 6; r, f = r+1, f+1 {
+	var upperLimit, lowerLimit int
+	if includeEdges {
+		upperLimit = 7
+		lowerLimit = 0
+	} else {
+		upperLimit = 6
+		lowerLimit = 1
+	}
+	for r, f := rank+1, file+1; r <= upperLimit && f <= upperLimit; r, f = r+1, f+1 {
 		result |= uint64(1) << (f + r*8)
 	}
-	for r, f := rank+1, file-1; r <= 6 && f >= 1; r, f = r+1, f-1 {
+	for r, f := rank+1, file-1; r <= upperLimit && f >= lowerLimit; r, f = r+1, f-1 {
 		result |= uint64(1) << (f + r*8)
 	}
-	for r, f := rank-1, file+1; r >= 1 && f <= 6; r, f = r-1, f+1 {
+	for r, f := rank-1, file+1; r >= lowerLimit && f <= upperLimit; r, f = r-1, f+1 {
 		result |= uint64(1) << (f + r*8)
 	}
-	for r, f := rank-1, file-1; r >= 1 && f >= 1; r, f = r-1, f-1 {
+	for r, f := rank-1, file-1; r >= lowerLimit && f >= lowerLimit; r, f = r-1, f-1 {
 		result |= uint64(1) << (f + r*8)
 	}
 	return result
@@ -152,9 +171,9 @@ func FindMagic(square int, numBits int, piece Piece) uint64 {
 	existing_entries := make(map[string]bool)
 
 	if piece == Bishop {
-		mask = GenerateBishopMask(square)
+		mask = GenerateBishopMask(square, false)
 	} else {
-		mask = GenerateRookMask(square)
+		mask = GenerateRookMask(square, false)
 	}
 	n := NumberOfOnes(mask)
 

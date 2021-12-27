@@ -1,54 +1,144 @@
 package main
 
 // Magics
-var bishopMasks = BishopMasks()
+var bishopMasksWithEdges = BishopMasks(true)
+var magicBishopMasks = BishopMasks(false)
 var bishopMagics = BishopMagics()
 var bishopBits = BishopBits()
 var bishopMoveTable = BishopMoveTable()
 
-var rookMasks = RookMasks()
+var rookMasksWithEdges = RookMasks(true)
+var magicRookMasks = RookMasks(false)
 var rookMagics = RookMagics()
 var rookBits = RookBits()
 var rookMoveTable = RookMoveTable()
 
 // Move tables
-var kingMoves = KingMasks()
-var whitePawnAttackMoves = WhitePawnAttackMasks()
-var whitePawnDoubleMoves = WhitePawnDoubleMasks()
-var whitePawnStraightMoves = WhitePawnStraightMasks()
-var blackPawnAttackMoves = BlackPawnAttackMasks()
-var blackPawnDoubleMoves = BlackPawnDoubleMasks()
-var blackPawnStraightMoves = BlackPawnStraightMasks()
-var knightMoves = KnightMasks()
+var kingMovesMapping = KingMovesMapping()
+var whitePawnAttackMoves = WhitePawnAttackMovesMapping()
+var whitePawnDoubleMoves = WhitePawnDoubleMovesMapping()
+var whitePawnStraightMoves = WhitePawnStraightMovesMapping()
+var blackPawnAttackMoves = BlackPawnAttackMovesMapping()
+var blackPawnDoubleMoves = BlackPawnDoubleMovesMapping()
+var blackPawnStraightMoves = BlackPawnStraightMovesMapping()
+var knightMovesMapping = KnightMovesMapping()
+
+var knightMasks = KnightMasks()
+var kingMasks = KingMasks()
+var whitePawnAttackMasks = WhitePawnAttackMasks()
+var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 func GenerateLegalMoves(b BitBoard) []BitBoard {
 	var nextStates []BitBoard
-	for _, m := range PawnMoves(b) {
-		nextStates = append(nextStates, Transition(b, m, Pawn))
+	kings := b.KingBB & b.TurnBoard()
+	currentKingPos, _ := PopFistBit(kings)
+
+	for _, m := range pawnMoves(b) {
+		nextState := transition(b, m, Pawn)
+		if !isChecked(nextState, currentKingPos) {
+			nextStates = append(nextStates, nextState)
+		}
 	}
-	for _, m := range KnightMoves(b) {
-		nextStates = append(nextStates, Transition(b, m, Knight))
+	for _, m := range knightMoves(b) {
+		nextState := transition(b, m, Knight)
+		if !isChecked(nextState, currentKingPos) {
+			nextStates = append(nextStates, nextState)
+		}
 	}
-	for _, m := range BishopMoves(b) {
-		nextStates = append(nextStates, Transition(b, m, Bishop))
+	for _, m := range bishopMoves(b) {
+		nextState := transition(b, m, Bishop)
+		if !isChecked(nextState, currentKingPos) {
+			nextStates = append(nextStates, nextState)
+		}
 	}
-	for _, m := range RookMoves(b) {
-		nextStates = append(nextStates, Transition(b, m, Rook))
+	for _, m := range rookMoves(b) {
+		nextState := transition(b, m, Rook)
+		if !isChecked(nextState, currentKingPos) {
+			nextStates = append(nextStates, nextState)
+		}
 	}
-	for _, m := range QueenMoves(b) {
-		nextStates = append(nextStates, Transition(b, m, Queen))
+	for _, m := range queenMoves(b) {
+		nextState := transition(b, m, Queen)
+		if !isChecked(nextState, currentKingPos) {
+			nextStates = append(nextStates, nextState)
+		}
 	}
-	for _, m := range KingMoves(b) {
-		nextStates = append(nextStates, Transition(b, m, King))
+	for _, m := range kingMoves(b) {
+		nextState := transition(b, m, King)
+		// Since the king move, we'll have to use the next position when looking for checks.
+		newKingPos := m.Destination()
+		if !isChecked(nextState, newKingPos) {
+			nextStates = append(nextStates, nextState)
+		}
 	}
 	return nextStates
 }
 
-func Transition(b BitBoard, m Move, piece Piece) BitBoard {
+func isChecked(nextState BitBoard, kingPos int) bool {
+	var isCheckByBishopOrQueen, isCheckByRookOrQueen bool
+	var attackingPawnMask uint64
+	turnBoard := nextState.TurnBoard()
+
+	if nextState.Turn() == White {
+		attackingPawnMask = whitePawnAttackMasks[kingPos]
+	} else {
+		attackingPawnMask = blackPawnAttackMasks[kingPos]
+	}
+
+	bishopsAndQueens := nextState.BishopBB | nextState.QueenBB
+	rooksAndQueens := nextState.RookBB | nextState.QueenBB
+
+	if bishopMasksWithEdges[kingPos]&bishopsAndQueens&turnBoard > 0 {
+		// The move resulted in a piece being moved from the diagonal where an opposing bishop can attack
+		// the king. We need to see if it is a discovery check.
+		blockers := magicBishopMasks[kingPos] & (nextState.WhiteBB | nextState.BlackBB)
+		magic := bishopMagics[kingPos]
+		key := int((blockers * magic) >> (64 - bishopBits[kingPos]))
+		bishopAttackMask := bishopMoveTable[MagicKey{Square: kingPos, Key: key}]
+		isCheckByBishopOrQueen = bishopAttackMask&bishopsAndQueens&turnBoard > 0
+	}
+	if rookMasksWithEdges[kingPos]&rooksAndQueens&turnBoard > 0 {
+		// Same as above, just with rooks instead
+		blockers := magicRookMasks[kingPos] & (nextState.WhiteBB | nextState.BlackBB)
+		magic := rookMagics[kingPos]
+		key := int((blockers * magic) >> (64 - rookBits[kingPos]))
+		rookAttackMask := rookMoveTable[MagicKey{Square: kingPos, Key: key}]
+		isCheckByRookOrQueen = rookAttackMask&rooksAndQueens&turnBoard > 0
+	}
+
+	isCheckByPawn := attackingPawnMask&nextState.PawnBB&turnBoard > 0
+	isCheckByKnight := knightMasks[kingPos]&nextState.KnightBB&turnBoard > 0
+	isCheckByKing := kingMasks[kingPos]&nextState.KingBB&turnBoard > 0
+
+	res := isCheckByBishopOrQueen || isCheckByRookOrQueen || isCheckByPawn || isCheckByKing || isCheckByKnight
+	return res
+}
+
+func transition(b BitBoard, m Move, piece Piece) BitBoard {
+	var capturedPiece Piece
+
 	origin := m.Origin()
 	destination := m.Destination()
 	originBB := posToBitBoard[origin]
 	destinationBB := posToBitBoard[destination]
+
+	switch {
+	case !isCapture(b, m):
+		capturedPiece = Empty
+	case destinationBB&b.OppositeTurnBoard()&b.PawnBB > 0:
+		capturedPiece = Pawn
+	case destinationBB&b.OppositeTurnBoard()&b.KnightBB > 0:
+		capturedPiece = Knight
+	case destinationBB&b.OppositeTurnBoard()&b.BishopBB > 0:
+		capturedPiece = Bishop
+	case destinationBB&b.OppositeTurnBoard()&b.RookBB > 0:
+		capturedPiece = Rook
+	case destinationBB&b.OppositeTurnBoard()&b.QueenBB > 0:
+		capturedPiece = Queen
+	case destinationBB&b.OppositeTurnBoard()&b.KingBB > 0:
+		capturedPiece = King
+
+	}
 
 	makeMove := func(bitboard uint64) uint64 {
 		return (bitboard &^ originBB) | destinationBB
@@ -61,6 +151,8 @@ func Transition(b BitBoard, m Move, piece Piece) BitBoard {
 	moveOrPass := func(currentPiece Piece, pieceBB uint64) uint64 {
 		if piece == currentPiece {
 			return makeMove(pieceBB)
+		} else if capturedPiece == currentPiece {
+			return pieceBB &^ destinationBB
 		} else {
 			return pieceBB
 		}
@@ -71,13 +163,13 @@ func Transition(b BitBoard, m Move, piece Piece) BitBoard {
 	if b.Turn() == White {
 		WhiteBB = makeMove(b.WhiteBB)
 		InverseWhiteBB = makeMoveInverse(b.InverseWhiteBB)
-		BlackBB = b.BlackBB
-		InverseBlackBB = b.InverseBlackBB
+		BlackBB = b.BlackBB &^ destinationBB
+		InverseBlackBB = b.InverseBlackBB | destinationBB
 	} else {
 		BlackBB = makeMove(b.BlackBB)
 		InverseBlackBB = makeMoveInverse(b.InverseBlackBB)
-		WhiteBB = b.WhiteBB
-		InverseWhiteBB = b.InverseWhiteBB
+		WhiteBB = b.WhiteBB &^ destinationBB
+		InverseWhiteBB = b.InverseWhiteBB | destinationBB
 	}
 
 	PawnBB = moveOrPass(Pawn, b.PawnBB)
@@ -87,7 +179,7 @@ func Transition(b BitBoard, m Move, piece Piece) BitBoard {
 	QueenBB = moveOrPass(Queen, b.QueenBB)
 	KingBB = moveOrPass(King, b.KingBB)
 
-	return BitBoard{
+	res := BitBoard{
 		WhiteBB:        WhiteBB,
 		BlackBB:        BlackBB,
 		InverseWhiteBB: InverseWhiteBB,
@@ -100,17 +192,19 @@ func Transition(b BitBoard, m Move, piece Piece) BitBoard {
 		KingBB:         KingBB,
 		Flags:          b.Flags ^ uint32(1),
 	}
+
+	return res
 }
 
-func KingMoves(bb BitBoard) []Move {
+func kingMoves(bb BitBoard) []Move {
 	var validMoves []Move
 	kings := bb.KingBB & bb.TurnBoard()
 	for kings > 0 {
 		pos, newKings := PopFistBit(kings)
 		kings = newKings
-		moves := kingMoves[pos]
+		moves := kingMovesMapping[pos]
 		for _, m := range moves {
-			if IsNotSelfCapture(bb, m) {
+			if isNotSelfCapture(bb, m) {
 				validMoves = append(validMoves, m)
 			}
 		}
@@ -118,75 +212,88 @@ func KingMoves(bb BitBoard) []Move {
 	return validMoves
 }
 
-func PawnMoves(bb BitBoard) []Move {
+func pawnMoves(bb BitBoard) []Move {
+	// TODO: Handle en pessant
 	var validMoves []Move
 	pawns := bb.PawnBB & bb.TurnBoard()
 	for pawns > 0 {
 		pos, newPawns := PopFistBit(pawns)
 		pawns = newPawns
-		var straight, double, attack []Move
+		validMoves = append(validMoves, pawnMovesFromPos(bb, pos)...)
+	}
+	return validMoves
+}
 
-		if bb.Turn() == White {
-			straight = whitePawnStraightMoves[pos]
-			double = whitePawnDoubleMoves[pos]
-			attack = whitePawnAttackMoves[pos]
-		} else {
-			straight = blackPawnStraightMoves[pos]
-			double = blackPawnDoubleMoves[pos]
-			attack = blackPawnAttackMoves[pos]
-		}
+func pawnMovesFromPos(bb BitBoard, origin int) []Move {
+	var validMoves []Move
+	var straight, double, attack []Move
 
-		// These are used to see if a piece is blocking the destinations of the pawn.
-		var straightOffset, doubleStraightOffset int
-		if bb.Turn() == White {
-			straightOffset = 8
-			doubleStraightOffset = 16
-		} else {
-			straightOffset = -8
-			doubleStraightOffset = -16
+	if bb.Turn() == White {
+		straight = whitePawnStraightMoves[origin]
+		double = whitePawnDoubleMoves[origin]
+		attack = whitePawnAttackMoves[origin]
+	} else {
+		straight = blackPawnStraightMoves[origin]
+		double = blackPawnDoubleMoves[origin]
+		attack = blackPawnAttackMoves[origin]
+	}
+
+	// These are used to see if a piece is blocking the destinations of the pawn.
+	var straightOffset, doubleStraightOffset int
+	if bb.Turn() == White {
+		straightOffset = 8
+		doubleStraightOffset = 16
+	} else {
+		straightOffset = -8
+		doubleStraightOffset = -16
+	}
+	for _, m := range straight {
+		if bb.IsEmpty(m.Origin() + straightOffset) {
+			validMoves = append(validMoves, m)
 		}
-		for _, m := range straight {
-			if bb.PieceAt(m.Origin()+straightOffset).piece == Empty {
-				validMoves = append(validMoves, m)
-			}
+	}
+	for _, m := range double {
+		if bb.IsEmpty(m.Origin()+straightOffset) && bb.IsEmpty(m.Origin()+doubleStraightOffset) {
+			validMoves = append(validMoves, m)
 		}
-		for _, m := range double {
-			if bb.PieceAt(m.Origin()+straightOffset).piece == Empty && bb.PieceAt(m.Origin()+doubleStraightOffset).piece == Empty {
-				validMoves = append(validMoves, m)
-			}
-		}
-		for _, m := range attack {
-			if IsNotSelfCapture(bb, m) && IsCapture(bb, m) {
-				validMoves = append(validMoves, m)
-			}
+	}
+	for _, m := range attack {
+		if isNotSelfCapture(bb, m) && isCapture(bb, m) {
+			validMoves = append(validMoves, m)
 		}
 	}
 	return validMoves
 }
 
-func KnightMoves(bb BitBoard) []Move {
+func knightMoves(bb BitBoard) []Move {
 	var validMoves []Move
 	knights := bb.KnightBB & bb.TurnBoard()
 	for knights > 0 {
 		pos, newKnights := PopFistBit(knights)
 		knights = newKnights
-		for _, move := range knightMoves[pos] {
-			if IsNotSelfCapture(bb, move) {
-				validMoves = append(validMoves, move)
-			}
+		validMoves = append(validMoves, knightMovesFromPos(bb, pos)...)
+	}
+	return validMoves
+}
+
+func knightMovesFromPos(bb BitBoard, origin int) []Move {
+	var validMoves []Move
+	for _, move := range knightMovesMapping[origin] {
+		if isNotSelfCapture(bb, move) {
+			validMoves = append(validMoves, move)
 		}
 	}
 	return validMoves
 }
 
-func BishopMoves(bb BitBoard) []Move {
+func bishopMoves(bb BitBoard) []Move {
 	var validMoves []Move
 	bishops := bb.BishopBB & bb.TurnBoard()
 	for bishops > 0 {
 		pos, newBishops := PopFistBit(bishops)
 		bishops = newBishops
 		for _, move := range bishopMovesFromPos(bb, pos) {
-			if IsNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, move) {
 				validMoves = append(validMoves, move)
 			}
 		}
@@ -196,7 +303,7 @@ func BishopMoves(bb BitBoard) []Move {
 
 func bishopMovesFromPos(bb BitBoard, origin int) []Move {
 	var moves []Move
-	mask := bishopMasks[origin]
+	mask := magicBishopMasks[origin]
 	blockers := mask & (bb.WhiteBB | bb.BlackBB)
 	magic := bishopMagics[origin]
 	key := int((blockers * magic) >> (64 - bishopBits[origin]))
@@ -214,14 +321,14 @@ func bishopMovesFromPos(bb BitBoard, origin int) []Move {
 	return moves
 }
 
-func RookMoves(bb BitBoard) []Move {
+func rookMoves(bb BitBoard) []Move {
 	var validMoves []Move
 	rooks := bb.RookBB & bb.TurnBoard()
 	for rooks > 0 {
 		pos, newRooks := PopFistBit(rooks)
 		rooks = newRooks
 		for _, move := range rookMovesFromPos(bb, pos) {
-			if IsNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, move) {
 				validMoves = append(validMoves, move)
 			}
 		}
@@ -231,7 +338,7 @@ func RookMoves(bb BitBoard) []Move {
 
 func rookMovesFromPos(bb BitBoard, origin int) []Move {
 	var moves []Move
-	mask := rookMasks[origin]
+	mask := magicRookMasks[origin]
 	blockers := mask & (bb.WhiteBB | bb.BlackBB)
 	magic := rookMagics[origin]
 	key := int((blockers * magic) >> (64 - rookBits[origin]))
@@ -249,7 +356,7 @@ func rookMovesFromPos(bb BitBoard, origin int) []Move {
 	return moves
 }
 
-func QueenMoves(bb BitBoard) []Move {
+func queenMoves(bb BitBoard) []Move {
 	var validMoves []Move
 	queens := bb.QueenBB & bb.TurnBoard()
 	for queens > 0 {
@@ -258,7 +365,7 @@ func QueenMoves(bb BitBoard) []Move {
 		rook := rookMovesFromPos(bb, origin)
 		bishop := bishopMovesFromPos(bb, origin)
 		for _, move := range append(rook, bishop...) {
-			if IsNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, move) {
 				validMoves = append(validMoves, move)
 			}
 		}
@@ -266,10 +373,10 @@ func QueenMoves(bb BitBoard) []Move {
 	return validMoves
 }
 
-func IsNotSelfCapture(bb BitBoard, m Move) bool {
-	return bb.PieceAt(m.Destination()).color != bb.Turn()
+func isNotSelfCapture(bb BitBoard, m Move) bool {
+	return bb.TurnBoard()&posToBitBoard[m.Destination()] == 0
 }
 
-func IsCapture(bb BitBoard, m Move) bool {
-	return bb.PieceAt(m.Destination()).color == bb.Turn().Opposite()
+func isCapture(bb BitBoard, m Move) bool {
+	return bb.OppositeTurnBoard()&posToBitBoard[m.Destination()] > 0
 }

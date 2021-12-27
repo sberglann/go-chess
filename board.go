@@ -31,7 +31,7 @@ type BitBoard struct {
 	// Bit 	   8: Whether or not black can castle king-side.
 	// Bit 	   9: Whether or not black can castle queen-side.
 	// Bit 10-16: The count since the last piece capture or pawn move. if this counter passes 100, the game is draw.
-	// Bit 	 17-31: The move counter. Incremented after black has moved.
+	// Bit 17-24: The move counter. Incremented after black has moved.
 	Flags uint32
 }
 
@@ -57,6 +57,14 @@ func (b BitBoard) TurnBoard() uint64 {
 	}
 }
 
+func (b BitBoard) OppositeTurnBoard() uint64 {
+	if b.Turn() == White {
+		return b.BlackBB
+	} else {
+		return b.WhiteBB
+	}
+}
+
 func (b BitBoard) Turn() Color {
 	if value := BitAt32(b.Flags, 0); value == 0 {
 		return White
@@ -71,6 +79,11 @@ func (b BitBoard) EnPassantFile() int {
 	} else {
 		return int(value)
 	}
+}
+
+func (b BitBoard) IsEmpty(pos int) bool {
+	res := posToBitBoard[pos]&(b.WhiteBB|b.BlackBB) == 0
+	return res
 }
 
 func (b BitBoard) PieceAt(pos int) ColoredPiece {

@@ -6,16 +6,27 @@ import (
 	"strings"
 )
 
+var kingOffsets = [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+var knightOffsets = [][2]int{{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}}
+var whitePawnStraightOffsets = [][2]int{{1, 0}}
+var whitePawnDoubleOffsets = [][2]int{{2, 0}}
+var whitePawnAttackOffsets = [][2]int{{1, -1}, {1, 1}}
+var blackPawnStraightOffsets = [][2]int{{-1, 0}}
+var blackPawnDoubleOffsets = [][2]int{{-2, 0}}
+var blackPawnAttackOffsets = [][2]int{{-1, -1}, {-1, 1}}
+
+// Magic move gen
+
 type MagicKey struct {
 	Square, Key int
 }
 
 var promotionFlags = []int{4, 5, 6, 7}
 
-func BishopMasks() map[int]uint64 {
+func BishopMasks(includeEdges bool) map[int]uint64 {
 	var mapping = make(map[int]uint64)
 	for i := 0; i < 64; i++ {
-		mapping[i] = GenerateBishopMask(i)
+		mapping[i] = GenerateBishopMask(i, includeEdges)
 	}
 	return mapping
 }
@@ -53,10 +64,10 @@ func BishopMoveTable() map[MagicKey]uint64 {
 	return mapping
 }
 
-func RookMasks() map[int]uint64 {
+func RookMasks(includeEdges bool) map[int]uint64 {
 	var mapping = make(map[int]uint64)
 	for i := 0; i < 64; i++ {
-		mapping[i] = GenerateRookMask(i)
+		mapping[i] = GenerateRookMask(i, includeEdges)
 	}
 	return mapping
 }
@@ -94,81 +105,59 @@ func RookMoveTable() map[MagicKey]uint64 {
 	return mapping
 }
 
-func KingMasks() map[int][]Move {
-	offsets := [][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
-	return GenerateStaticMasks(offsets, 0, 64)
+// Static moves
+
+func KingMovesMapping() map[int][]Move {
+	return generateStaticMoves(kingOffsets, 0, 64)
 }
 
-func KnightMasks() map[int][]Move {
-	offsets := [][2]int{{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}}
-	return GenerateStaticMasks(offsets, 0, 64)
+func KnightMovesMapping() map[int][]Move {
+	return generateStaticMoves(knightOffsets, 0, 64)
 }
 
-func WhitePawnStraightMasks() map[int][]Move {
-	offsets := [][2]int{{1, 0}}
-	nonPromotingMoves := GenerateStaticMasks(offsets, 8, 48)
-	promotingMoves := GenerateStaticMasksWithFlags(offsets, 48, 56, promotionFlags)
+func WhitePawnStraightMovesMapping() map[int][]Move {
+	nonPromotingMoves := generateStaticMoves(whitePawnStraightOffsets, 8, 48)
+	promotingMoves := generateStaticMovesWithFlags(whitePawnStraightOffsets, 48, 56, promotionFlags)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 48)
 }
 
-func WhitePawnDoubleMasks() map[int][]Move {
-	offsets := [][2]int{{2, 0}}
-	return GenerateStaticMasks(offsets, 8, 16)
+func WhitePawnDoubleMovesMapping() map[int][]Move {
+	return generateStaticMoves(whitePawnDoubleOffsets, 8, 16)
 }
 
-func WhitePawnAttackMasks() map[int][]Move {
-	offsets := [][2]int{{1, -1}, {1, 1}}
-	nonPromotingMoves := GenerateStaticMasks(offsets, 8, 48)
-	promotingMoves := GenerateStaticMasksWithFlags(offsets, 48, 56, promotionFlags)
+func WhitePawnAttackMovesMapping() map[int][]Move {
+	nonPromotingMoves := generateStaticMoves(whitePawnAttackOffsets, 8, 48)
+	promotingMoves := generateStaticMovesWithFlags(whitePawnAttackOffsets, 48, 56, promotionFlags)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
-func BlackPawnDoubleMasks() map[int][]Move {
-	offsets := [][2]int{{-2, 0}}
-	return GenerateStaticMasks(offsets, 48, 56)
+func BlackPawnDoubleMovesMapping() map[int][]Move {
+	return generateStaticMoves(blackPawnDoubleOffsets, 48, 56)
 }
 
-func BlackPawnStraightMasks() map[int][]Move {
-	offsets := [][2]int{{-1, 0}}
-	nonPromotingMoves := GenerateStaticMasks(offsets, 16, 56)
-	promotingMoves := GenerateStaticMasks(offsets, 8, 16)
+func BlackPawnStraightMovesMapping() map[int][]Move {
+	nonPromotingMoves := generateStaticMoves(blackPawnStraightOffsets, 16, 56)
+	promotingMoves := generateStaticMoves(blackPawnStraightOffsets, 8, 16)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
-func BlackPawnAttackMasks() map[int][]Move {
-	offsets := [][2]int{{-1, -1}, {-1, 1}}
-	nonPromotingMoves := GenerateStaticMasks(offsets, 16, 56)
-	promotingMoves := GenerateStaticMasks(offsets, 8, 16)
+func BlackPawnAttackMovesMapping() map[int][]Move {
+	nonPromotingMoves := generateStaticMoves(blackPawnAttackOffsets, 16, 56)
+	promotingMoves := generateStaticMoves(blackPawnAttackOffsets, 8, 16)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
-func GenerateStaticMasks(offsets [][2]int, from int, to int) map[int][]Move {
+func generateStaticMoves(offsets [][2]int, from int, to int) map[int][]Move {
 	standardFlags := []int{0}
-	return GenerateStaticMasksWithFlags(offsets, from, to, standardFlags)
+	return generateStaticMovesWithFlags(offsets, from, to, standardFlags)
 }
 
-func GenerateStaticMasksWithFlags(offsets [][2]int, from int, to int, flags []int) map[int][]Move {
-	generateDestinations := func(i int) []int {
-		baseRank, baseFile := IndexToCartesian(i)
-
-		var indices []int
-
-		for _, offset := range offsets {
-			rank := baseRank + offset[0]
-			file := baseFile + offset[1]
-			if rank >= 1 && rank <= 8 && file >= 1 && file <= 8 {
-				indices = append(indices, CartesianToIndex(rank, file))
-			}
-		}
-
-		return indices
-	}
-
+func generateStaticMovesWithFlags(offsets [][2]int, from int, to int, flags []int) map[int][]Move {
 	moves := make(map[int][]Move)
 	var currentMoves []Move
 
 	for origin := from; origin < to; origin++ {
-		for _, destination := range generateDestinations(origin) {
+		for _, destination := range generateDestinations(origin, offsets) {
 			for _, flag := range flags {
 				destinationBits := uint16(destination)
 				originBits := uint16(origin) << 6
@@ -183,6 +172,22 @@ func GenerateStaticMasksWithFlags(offsets [][2]int, from int, to int, flags []in
 	}
 
 	return moves
+}
+
+func generateDestinations(i int, offsets [][2]int) []int {
+	baseRank, baseFile := IndexToCartesian(i)
+
+	var indices []int
+
+	for _, offset := range offsets {
+		rank := baseRank + offset[0]
+		file := baseFile + offset[1]
+		if rank >= 1 && rank <= 8 && file >= 1 && file <= 8 {
+			indices = append(indices, CartesianToIndex(rank, file))
+		}
+	}
+
+	return indices
 }
 
 // Creates a mapping from index to the uint64 one-hot representation of the number.
@@ -200,4 +205,33 @@ func mergeMoveMaps(a map[int][]Move, b map[int][]Move, from int, to int) map[int
 		merged[i] = append(a[i], b[i]...)
 	}
 	return merged
+}
+
+// Attack masks
+func KnightMasks() map[int]uint64 {
+	return generateMaskMapping(knightOffsets)
+}
+
+func WhitePawnAttackMasks() map[int]uint64 {
+	return generateMaskMapping(whitePawnAttackOffsets)
+}
+
+func BlackPawnAttackMasks() map[int]uint64 {
+	return generateMaskMapping(blackPawnAttackOffsets)
+}
+
+func KingMasks() map[int]uint64 {
+	return generateMaskMapping(kingOffsets)
+}
+
+func generateMaskMapping(offsets [][2]int) map[int]uint64 {
+	mapping := make(map[int]uint64)
+	for i := 0; i < 64; i++ {
+		var mask uint64
+		for _, destination := range generateDestinations(i, offsets) {
+			mask |= uint64(1) << destination
+		}
+		mapping[i] = mask
+	}
+	return mapping
 }
