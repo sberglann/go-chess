@@ -8,19 +8,27 @@ type Move struct {
 	// 	- 01: Bishop
 	//	- 10: Rook
 	//  - 11: Queen
-	// Bit 14-15: special move type
-	//  - 01: Promotion
-	//  - 10: En passant
-	//  - 11: Castling
-	bits uint16
+	// Bit 14-16: special move type
+	//  - 001: Promotion
+	//  - 010: Double pawn move, making en passant possible in the next move
+	//  - 011: Castling
+	//  - 100: en passant
+	bits uint32
 }
 
 func (m Move) Destination() int {
-	return int(m.bits & 0x003F)
+	return int(m.bits & 0x3F)
+}
+func (m Move) IsDoublePawnMove() bool {
+	return m.bits&0x8000 > 0
+}
+
+func (m Move) IsEnPassantMove() bool {
+	return m.bits&0x10000 > 0
 }
 
 func (m Move) Origin() int {
-	return int(m.bits & 0x0FC0 >> 6)
+	return int(m.bits & 0xFC0 >> 6)
 }
 
 func (m Move) Promotion() Piece {

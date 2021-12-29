@@ -8,10 +8,8 @@ import (
 
 type BitBoard struct {
 	// Bit boards for colors
-	WhiteBB        uint64
-	BlackBB        uint64
-	InverseWhiteBB uint64
-	InverseBlackBB uint64
+	WhiteBB uint64
+	BlackBB uint64
 
 	// Bit boards for piece types
 	PawnBB   uint64
@@ -36,17 +34,15 @@ type BitBoard struct {
 }
 
 var StartBoard = BitBoard{
-	WhiteBB:        uint64(0x000000000000ffff),
-	BlackBB:        uint64(0xffff000000000000),
-	InverseWhiteBB: uint64(0xfffffffffff00000),
-	InverseBlackBB: uint64(0x0000ffffffffffff),
-	PawnBB:         uint64(0x00ff00000000ff00),
-	KnightBB:       uint64(0x4200000000000042),
-	BishopBB:       uint64(0x2400000000000024),
-	RookBB:         uint64(0x8100000000000081),
-	QueenBB:        uint64(0x0800000000000008),
-	KingBB:         uint64(0x1000000000000010),
-	Flags:          uint32(0x000001FE),
+	WhiteBB:  uint64(0x000000000000ffff),
+	BlackBB:  uint64(0xffff000000000000),
+	PawnBB:   uint64(0x00ff00000000ff00),
+	KnightBB: uint64(0x4200000000000042),
+	BishopBB: uint64(0x2400000000000024),
+	RookBB:   uint64(0x8100000000000081),
+	QueenBB:  uint64(0x0800000000000008),
+	KingBB:   uint64(0x1000000000000010),
+	Flags:    uint32(0x000001FE),
 }
 
 func (b BitBoard) TurnBoard() uint64 {
@@ -73,8 +69,8 @@ func (b BitBoard) Turn() Color {
 	}
 }
 
-func (b BitBoard) EnPassantFile() int {
-	if value := b.Flags >> 1 & 0xF; value > 7 {
+func (b BitBoard) DoublePawnMoveFile() int {
+	if value := b.Flags >> 1 & 0xF; value > 8 || value < 1 {
 		return -1
 	} else {
 		return int(value)
@@ -187,12 +183,12 @@ func (b BitBoard) ToFEN() string {
 	}
 
 	var enPassentString string
-	enPessantFile := int(b.Flags >> 1 & uint32(15))
-	if enPessantFile > 7 {
+	enPassantFile := int(b.Flags >> 1 & uint32(15))
+	if enPassantFile > 7 {
 		enPassentString = "-"
 	} else {
 		// The file number is 0-indexed, while the mapping is 1-indexed.
-		file := FileToLetter[enPessantFile+1]
+		file := FileToLetter[enPassantFile+1]
 		if b.Turn() == White {
 			// Black moved previous turn, and the pawn rank is 6
 			enPassentString = file + "6"
@@ -230,7 +226,7 @@ func CartesianToIndex(rank int, file int) int {
 }
 
 func BoardFromFEN(fen string) BitBoard {
-	var whiteBB, blackBB, inverseWhiteBB, inverseBlackBB, pawnBB, knightBB, bishopBB, rookBB, queenBB, kingBB uint64
+	var whiteBB, blackBB, pawnBB, knightBB, bishopBB, rookBB, queenBB, kingBB uint64
 	var flags uint32
 	split := strings.Split(fen, " ")
 	pieces := split[0]
@@ -336,21 +332,17 @@ func BoardFromFEN(fen string) BitBoard {
 			}
 		}
 	}
-	inverseWhiteBB = ^whiteBB
-	inverseBlackBB = ^blackBB
 
 	board := BitBoard{
-		WhiteBB:        whiteBB,
-		BlackBB:        blackBB,
-		InverseWhiteBB: inverseWhiteBB,
-		InverseBlackBB: inverseBlackBB,
-		PawnBB:         pawnBB,
-		KnightBB:       knightBB,
-		BishopBB:       bishopBB,
-		RookBB:         rookBB,
-		QueenBB:        queenBB,
-		KingBB:         kingBB,
-		Flags:          flags,
+		WhiteBB:  whiteBB,
+		BlackBB:  blackBB,
+		PawnBB:   pawnBB,
+		KnightBB: knightBB,
+		BishopBB: bishopBB,
+		RookBB:   rookBB,
+		QueenBB:  queenBB,
+		KingBB:   kingBB,
+		Flags:    flags,
 	}
 
 	return board

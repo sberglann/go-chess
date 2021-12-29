@@ -18,9 +18,11 @@ var kingMovesMapping = KingMovesMapping()
 var whitePawnAttackMoves = WhitePawnAttackMovesMapping()
 var whitePawnDoubleMoves = WhitePawnDoubleMovesMapping()
 var whitePawnStraightMoves = WhitePawnStraightMovesMapping()
+var whiteEnPassantMoves = WhiteEnPassantMovesMapping()
 var blackPawnAttackMoves = BlackPawnAttackMovesMapping()
 var blackPawnDoubleMoves = BlackPawnDoubleMovesMapping()
 var blackPawnStraightMoves = BlackPawnStraightMovesMapping()
+var blackEnPassantMoves = BlackEnPassantMovesMapping()
 var knightMovesMapping = KnightMovesMapping()
 
 var knightMasks = KnightMasks()
@@ -71,6 +73,14 @@ func GenerateLegalMoves(b BitBoard) []BitBoard {
 			nextStates = append(nextStates, nextState)
 		}
 	}
+	if len(nextStates) == 0 {
+		CheckMateCounter += 1
+	}
+
+	for _, b := range nextStates {
+		b.PrettyBoard()
+		println("------------------------")
+	}
 	return nextStates
 }
 
@@ -116,11 +126,17 @@ func isChecked(nextState BitBoard, kingPos int) bool {
 
 func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	var capturedPiece Piece
+	var enPassantFile int
 
 	origin := m.Origin()
 	destination := m.Destination()
 	originBB := posToBitBoard[origin]
 	destinationBB := posToBitBoard[destination]
+	if m.IsEnPassantMove() {
+		enPassantFile = (m.Destination() % 8) + 1
+	} else {
+		enPassantFile = 0
+	}
 
 	switch {
 	case !isCapture(b, m):
@@ -137,15 +153,10 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 		capturedPiece = Queen
 	case destinationBB&b.OppositeTurnBoard()&b.KingBB > 0:
 		capturedPiece = King
-
 	}
 
 	makeMove := func(bitboard uint64) uint64 {
 		return (bitboard &^ originBB) | destinationBB
-	}
-
-	makeMoveInverse := func(bitboard uint64) uint64 {
-		return (bitboard | originBB) &^ destinationBB
 	}
 
 	moveOrPass := func(currentPiece Piece, pieceBB uint64) uint64 {
@@ -158,21 +169,45 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 		}
 	}
 
-	var WhiteBB, BlackBB, InverseWhiteBB, InverseBlackBB, PawnBB, KnightBB, BishopBB, RookBB, QueenBB, KingBB uint64
+	// Invert the first bit to change turns
+	flags := b.Flags ^ uint32(1)
+	// Clear previous double pawn move flag
+	flags &^= uint32(0b11110)
 
-	if b.Turn() == White {
-		WhiteBB = makeMove(b.WhiteBB)
-		InverseWhiteBB = makeMoveInverse(b.InverseWhiteBB)
-		BlackBB = b.BlackBB &^ destinationBB
-		InverseBlackBB = b.InverseBlackBB | destinationBB
-	} else {
-		BlackBB = makeMove(b.BlackBB)
-		InverseBlackBB = makeMoveInverse(b.InverseBlackBB)
-		WhiteBB = b.WhiteBB &^ destinationBB
-		InverseWhiteBB = b.InverseWhiteBB | destinationBB
+	if m.IsDoublePawnMove() {
+		dpfile := (m.Destination() % 8) + 1
+		flags |= (uint32(dpfile << 1))
 	}
 
-	PawnBB = moveOrPass(Pawn, b.PawnBB)
+	var WhiteBB, BlackBB, PawnBB, KnightBB, BishopBB, RookBB, QueenBB, KingBB uint64
+
+	if enPassantFile > 0 {
+		if b.Turn() == White {
+			WhiteBB = (b.WhiteBB | posToBitBoard[40+enPassantFile-1]) &^ originBB
+			BlackBB = (b.BlackBB &^ posToBitBoard[32+enPassantFile-1])
+		} else {
+			BlackBB = (b.BlackBB | posToBitBoard[16+enPassantFile-1]) &^ originBB
+			WhiteBB = (b.WhiteBB &^ posToBitBoard[24+enPassantFile-1])
+		}
+	} else {
+		if b.Turn() == White {
+			WhiteBB = makeMove(b.WhiteBB)
+			BlackBB = b.BlackBB &^ destinationBB
+		} else {
+			BlackBB = makeMove(b.BlackBB)
+			WhiteBB = b.WhiteBB &^ destinationBB
+		}
+	}
+
+	if enPassantFile > 0 {
+		if b.Turn() == White {
+			PawnBB = (b.PawnBB | posToBitBoard[40+enPassantFile-1]) &^ originBB &^ posToBitBoard[32+enPassantFile-1]
+		} else {
+			PawnBB = (b.PawnBB | posToBitBoard[16+enPassantFile-1]) &^ originBB &^ posToBitBoard[24+enPassantFile-1]
+		}
+	} else {
+		PawnBB = moveOrPass(Pawn, b.PawnBB)
+	}
 	KnightBB = moveOrPass(Knight, b.KnightBB)
 	BishopBB = moveOrPass(Bishop, b.BishopBB)
 	RookBB = moveOrPass(Rook, b.RookBB)
@@ -180,17 +215,15 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	KingBB = moveOrPass(King, b.KingBB)
 
 	res := BitBoard{
-		WhiteBB:        WhiteBB,
-		BlackBB:        BlackBB,
-		InverseWhiteBB: InverseWhiteBB,
-		InverseBlackBB: InverseBlackBB,
-		PawnBB:         PawnBB,
-		KnightBB:       KnightBB,
-		BishopBB:       BishopBB,
-		RookBB:         RookBB,
-		QueenBB:        QueenBB,
-		KingBB:         KingBB,
-		Flags:          b.Flags ^ uint32(1),
+		WhiteBB:  WhiteBB,
+		BlackBB:  BlackBB,
+		PawnBB:   PawnBB,
+		KnightBB: KnightBB,
+		BishopBB: BishopBB,
+		RookBB:   RookBB,
+		QueenBB:  QueenBB,
+		KingBB:   KingBB,
+		Flags:    flags,
 	}
 
 	return res
@@ -213,7 +246,6 @@ func kingMoves(bb BitBoard) []Move {
 }
 
 func pawnMoves(bb BitBoard) []Move {
-	// TODO: Handle en pessant
 	var validMoves []Move
 	pawns := bb.PawnBB & bb.TurnBoard()
 	for pawns > 0 {
@@ -226,16 +258,22 @@ func pawnMoves(bb BitBoard) []Move {
 
 func pawnMovesFromPos(bb BitBoard, origin int) []Move {
 	var validMoves []Move
-	var straight, double, attack []Move
+	var straight, double, attack, enPassant []Move
 
 	if bb.Turn() == White {
 		straight = whitePawnStraightMoves[origin]
 		double = whitePawnDoubleMoves[origin]
 		attack = whitePawnAttackMoves[origin]
+		if file := bb.DoublePawnMoveFile(); file > 0 && file <= 8 {
+			enPassant = whiteEnPassantMoves[origin]
+		}
 	} else {
 		straight = blackPawnStraightMoves[origin]
 		double = blackPawnDoubleMoves[origin]
 		attack = blackPawnAttackMoves[origin]
+		if file := bb.DoublePawnMoveFile(); file > 0 && file <= 8 {
+			enPassant = blackEnPassantMoves[origin]
+		}
 	}
 
 	// These are used to see if a piece is blocking the destinations of the pawn.
@@ -262,6 +300,12 @@ func pawnMovesFromPos(bb BitBoard, origin int) []Move {
 			validMoves = append(validMoves, m)
 		}
 	}
+	for _, m := range enPassant {
+		if isValidEnPassantCapture(bb, m) {
+			validMoves = append(validMoves, m)
+		}
+	}
+
 	return validMoves
 }
 
@@ -311,9 +355,9 @@ func bishopMovesFromPos(bb BitBoard, origin int) []Move {
 	for legalSquares > 0 {
 		destination, newSquares := PopFistBit(legalSquares)
 		legalSquares = newSquares
-		destinationBits := uint16(destination)
-		originBits := uint16(origin) << 6
-		flagBits := uint16(0) << 12
+		destinationBits := uint32(destination)
+		originBits := uint32(origin) << 6
+		flagBits := uint32(0) << 12
 
 		move := Move{destinationBits | originBits | flagBits}
 		moves = append(moves, move)
@@ -346,9 +390,9 @@ func rookMovesFromPos(bb BitBoard, origin int) []Move {
 	for legalSquares > 0 {
 		destination, newSquares := PopFistBit(legalSquares)
 		legalSquares = newSquares
-		destinationBits := uint16(destination)
-		originBits := uint16(origin) << 6
-		flagBits := uint16(0) << 12
+		destinationBits := uint32(destination)
+		originBits := uint32(origin) << 6
+		flagBits := uint32(0) << 12
 
 		move := Move{destinationBits | originBits | flagBits}
 		moves = append(moves, move)
@@ -379,4 +423,13 @@ func isNotSelfCapture(bb BitBoard, m Move) bool {
 
 func isCapture(bb BitBoard, m Move) bool {
 	return bb.OppositeTurnBoard()&posToBitBoard[m.Destination()] > 0
+}
+
+func isValidEnPassantCapture(bb BitBoard, m Move) bool {
+	if file := bb.DoublePawnMoveFile(); file == (m.Destination()%8)+1 {
+		EnPassantCounter += 1
+		return true
+	} else {
+		return false
+	}
 }

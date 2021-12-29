@@ -22,6 +22,8 @@ type MagicKey struct {
 }
 
 var promotionFlags = []int{4, 5, 6, 7}
+var doublePawnMoveFlag = []int{8}
+var enPassantMoveFlag = []int{16}
 
 func BishopMasks(includeEdges bool) map[int]uint64 {
 	var mapping = make(map[int]uint64)
@@ -122,7 +124,7 @@ func WhitePawnStraightMovesMapping() map[int][]Move {
 }
 
 func WhitePawnDoubleMovesMapping() map[int][]Move {
-	return generateStaticMoves(whitePawnDoubleOffsets, 8, 16)
+	return generateStaticMovesWithFlags(whitePawnDoubleOffsets, 8, 16, doublePawnMoveFlag)
 }
 
 func WhitePawnAttackMovesMapping() map[int][]Move {
@@ -131,8 +133,12 @@ func WhitePawnAttackMovesMapping() map[int][]Move {
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
+func WhiteEnPassantMovesMapping() map[int][]Move {
+	return generateStaticMovesWithFlags(whitePawnAttackOffsets, 32, 40, enPassantMoveFlag)
+}
+
 func BlackPawnDoubleMovesMapping() map[int][]Move {
-	return generateStaticMoves(blackPawnDoubleOffsets, 48, 56)
+	return generateStaticMovesWithFlags(blackPawnDoubleOffsets, 48, 56, doublePawnMoveFlag)
 }
 
 func BlackPawnStraightMovesMapping() map[int][]Move {
@@ -147,6 +153,10 @@ func BlackPawnAttackMovesMapping() map[int][]Move {
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
+func BlackEnPassantMovesMapping() map[int][]Move {
+	return generateStaticMovesWithFlags(blackPawnAttackOffsets, 24, 32, enPassantMoveFlag)
+}
+
 func generateStaticMoves(offsets [][2]int, from int, to int) map[int][]Move {
 	standardFlags := []int{0}
 	return generateStaticMovesWithFlags(offsets, from, to, standardFlags)
@@ -159,9 +169,9 @@ func generateStaticMovesWithFlags(offsets [][2]int, from int, to int, flags []in
 	for origin := from; origin < to; origin++ {
 		for _, destination := range generateDestinations(origin, offsets) {
 			for _, flag := range flags {
-				destinationBits := uint16(destination)
-				originBits := uint16(origin) << 6
-				flagBits := uint16(flag) << 12
+				destinationBits := uint32(destination)
+				originBits := uint32(origin) << 6
+				flagBits := uint32(flag) << 12
 
 				move := Move{destinationBits | originBits | flagBits}
 				currentMoves = append(currentMoves, move)
