@@ -69,12 +69,36 @@ func (b BitBoard) Turn() Color {
 	}
 }
 
+func (b BitBoard) OppositeTurn() Color {
+	if b.Turn() == White {
+		return Black
+	} else {
+		return White
+	}
+}
+
 func (b BitBoard) DoublePawnMoveFile() int {
 	if value := b.Flags >> 1 & 0xF; value > 8 || value < 1 {
 		return -1
 	} else {
 		return int(value)
 	}
+}
+
+func (b BitBoard) WhiteCanCastleKingSite() bool {
+	return b.Flags&(uint32(1)<<6) > 0
+}
+
+func (b BitBoard) WhiteCanCastleQueenSite() bool {
+	return b.Flags&(uint32(1)<<7) > 0
+}
+
+func (b BitBoard) BlackCanCastleKingSite() bool {
+	return b.Flags&(uint32(1)<<8) > 0
+}
+
+func (b BitBoard) BlackCanCastleQueenSite() bool {
+	return b.Flags&(uint32(1)<<9) > 0
 }
 
 func (b BitBoard) IsEmpty(pos int) bool {
@@ -127,6 +151,7 @@ func (b BitBoard) PrettyBoard() {
 		}
 		fmt.Println()
 	}
+	println("------------------------")
 }
 
 func (b BitBoard) ToFEN() string {

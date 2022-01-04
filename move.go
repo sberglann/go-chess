@@ -27,6 +27,10 @@ func (m Move) IsEnPassantMove() bool {
 	return m.bits&0x10000 > 0
 }
 
+func (m Move) IsCastleMove() bool {
+	return m.bits&0xC000 > 0
+}
+
 func (m Move) Origin() int {
 	return int(m.bits & 0xFC0 >> 6)
 }
