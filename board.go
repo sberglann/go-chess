@@ -253,37 +253,49 @@ func CartesianToIndex(rank int, file int) int {
 func BoardFromFEN(fen string) BitBoard {
 	var whiteBB, blackBB, pawnBB, knightBB, bishopBB, rookBB, queenBB, kingBB uint64
 	var flags uint32
+	var castling, enPassant, halfMoveClockRaw, fullMoveNumberRaw string
 	split := strings.Split(fen, " ")
 	pieces := split[0]
-	castling := split[2]
-	enPassent := split[3]
-	halfMoveClockRaw := split[4]
-	fullMoveNumberRaw := split[5]
+	// Not all FEN strings define meta data. If only pieces are given, fallback to default values.
+	if len(split) >= 6 {
+		castling = split[2]
+		enPassant = split[3]
+		halfMoveClockRaw = split[4]
+		fullMoveNumberRaw = split[5]
+	} else {
+		castling = "KQkq"
+		enPassant = "-"
+		halfMoveClockRaw = "0"
+		fullMoveNumberRaw = "0"
+	}
 
 	halfMoveClock, _ := strconv.Atoi(halfMoveClockRaw)
 	fullMoveNumber, _ := strconv.Atoi(fullMoveNumberRaw)
 	flags |= uint32(halfMoveClock) << 10
 	flags |= uint32(fullMoveNumber) << 17
 
-	if activeColor := split[1]; activeColor == "b" {
-		flags |= uint32(1)
+	// If turn isn't defined, fallback to white
+	if len(split) >= 2 {
+		if activeColor := split[1]; activeColor == "b" {
+			flags |= uint32(1)
+		}
 	}
 	switch {
-	case strings.Contains(enPassent, "a"):
+	case strings.Contains(enPassant, "a"):
 		flags |= uint32(0) << 1
-	case strings.Contains(enPassent, "b"):
+	case strings.Contains(enPassant, "b"):
 		flags |= uint32(1) << 1
-	case strings.Contains(enPassent, "c"):
+	case strings.Contains(enPassant, "c"):
 		flags |= uint32(2) << 1
-	case strings.Contains(enPassent, "d"):
+	case strings.Contains(enPassant, "d"):
 		flags |= uint32(3) << 1
-	case strings.Contains(enPassent, "e"):
+	case strings.Contains(enPassant, "e"):
 		flags |= uint32(4) << 1
-	case strings.Contains(enPassent, "f"):
+	case strings.Contains(enPassant, "f"):
 		flags |= uint32(5) << 1
-	case strings.Contains(enPassent, "g"):
+	case strings.Contains(enPassant, "g"):
 		flags |= uint32(6) << 1
-	case strings.Contains(enPassent, "h"):
+	case strings.Contains(enPassant, "h"):
 		flags |= uint32(7) << 1
 	default:
 		flags |= uint32(8) << 1
