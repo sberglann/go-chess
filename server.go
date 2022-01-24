@@ -1,10 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"strings"
 )
+
+type MoveResponse struct {
+	Move       string   `json:"move"`
+	LegalMoves []string `json:"legalMoves"`
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -13,33 +20,44 @@ var upgrader = websocket.Upgrader{
 }
 
 func StartServer() {
-	http.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/chess", func(w http.ResponseWriter, r *http.Request) {
 		conn, _ := upgrader.Upgrade(w, r, nil)
-
 		for {
 			// Read message from browser
-			msgType, msg, err := conn.ReadMessage()
+			msgType, receivedMessage, err := conn.ReadMessage()
 			if err != nil {
 				return
 			}
 
-			fenString := string(msg)
+			fenString := string(receivedMessage)
 			board := BoardFromFEN(fenString)
 			nextMove := GenerateLegalMoves(board)[0]
-			nextFEN := nextMove.ToFEN()
+			legalMoves := GenerateLegalMoves(nextMove)
+
+			var legalFenMoves []string
+			for _, move := range legalMoves {
+				onlyPieces := strings.Split(move.ToFEN(), " ")[0]
+				legalFenMoves = append(legalFenMoves, onlyPieces)
+			}
+			response := &MoveResponse{nextMove.ToFEN(), legalFenMoves}
+			message, err := json.Marshal(response)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 
 			// Print the message to the console
-			fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
+			fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(receivedMessage))
 
 			// Write message back to browser
-			if err = conn.WriteMessage(msgType, []byte(nextFEN)); err != nil {
+			if err = conn.WriteMessage(msgType, message); err != nil {
 				return
 			}
 		}
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "index.html")
+		http.ServeFile(w, r, "gui/index.html")
 	})
 
 	http.ListenAndServe(":8080", nil)

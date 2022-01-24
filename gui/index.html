@@ -7,33 +7,47 @@
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="js/chessboard-1.0.0.min.js"></script>
 </head>
-<body>
-<div id="board" style="width: 400px"></div>
+<body style="background-color: floralwhite">
+<div id="board" style="width: 400px;margin:0px auto"></div>
 <script>
-    function sendPosition(source, target, piece, newPos, oldPos, orientation) {
-        console.log('New position: ' + Chessboard.objToFen(newPos))
-        var prevTurn = piece[0]
-        var nextTurn = prevTurn == "w" ? "b" : "w"
-        console.log(prevTurn)
-        console.log(nextTurn)
-        socket.send(Chessboard.objToFen(newPos).concat(" ", nextTurn));
-    }
+    var legalMoves = [
+        "rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR"
+    ]
 
-    var socket = new WebSocket("ws://localhost:8080/echo");
-    var boardConfig = {
+    var socket = new WebSocket("ws://localhost:8080/chess");
+
+
+    const boardConfig = {
         draggable: true,
         dropOffBoard: 'snapback',
-        onDrop: sendPosition
+        onDrop: onDrop
     }
+
     var board = Chessboard('board', boardConfig);
 
     socket.onopen = function () {
-        board.start(false)
+        board.start(false);
     };
 
     socket.onmessage = function (e) {
-        board.position(e.data, false)
+        const message = JSON.parse(e.data);
+        const currentPosition = message.move;
+        legalMoves = message.legalMoves;
+        board.position(currentPosition, false);
     };
+
+    function onDrop(source, target, piece, newPos, oldPos, orientation) {
+        const newPosFen = Chessboard.objToFen(newPos)
+        if (legalMoves.includes(newPosFen)) {
+            console.log('New position: ' + Chessboard.objToFen(newPos))
+            var prevTurn = piece[0]
+            var nextTurn = prevTurn == "w" ? "b" : "w"
+
+            socket.send(newPosFen.concat(" ", nextTurn));
+        } else {
+            return 'snapback'
+        }
+    }
 </script>
 </body>
 </html>
