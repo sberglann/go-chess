@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"math/rand"
 	"net/http"
 	"strings"
 )
@@ -28,13 +29,21 @@ func StartServer() {
 			if err != nil {
 				return
 			}
-
-			fenString := string(receivedMessage)
-			board := BoardFromFEN(fenString)
-			nextMove := GenerateLegalMoves(board)[0]
-			legalMoves := GenerateLegalMoves(nextMove)
+			receivedMessageString := string(receivedMessage)
 
 			var legalFenMoves []string
+			var nextMove BitBoard
+			if receivedMessageString == "init" {
+				nextMove = StartBoard
+			} else {
+				board := BoardFromFEN(receivedMessageString)
+				legalMoves := GenerateLegalMoves(board)
+				// For now, just pick a random move.
+				nextMove = legalMoves[rand.Intn(len(legalMoves))]
+			}
+
+			legalMoves := GenerateLegalMoves(nextMove)
+
 			for _, move := range legalMoves {
 				onlyPieces := strings.Split(move.ToFEN(), " ")[0]
 				legalFenMoves = append(legalFenMoves, onlyPieces)

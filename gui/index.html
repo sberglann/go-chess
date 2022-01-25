@@ -10,9 +10,7 @@
 <body style="background-color: floralwhite">
 <div id="board" style="width: 400px;margin:0px auto"></div>
 <script>
-    var legalMoves = [
-        "rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR"
-    ]
+    var legalMoves = []
 
     var socket = new WebSocket("ws://localhost:8080/chess");
 
@@ -27,6 +25,8 @@
 
     socket.onopen = function () {
         board.start(false);
+        // Send the start board FEN on connect to get all initial legal moves.
+        socket.send("init")
     };
 
     socket.onmessage = function (e) {
@@ -41,10 +41,11 @@
         if (legalMoves.includes(newPosFen)) {
             console.log('New position: ' + Chessboard.objToFen(newPos))
             var prevTurn = piece[0]
-            var nextTurn = prevTurn == "w" ? "b" : "w"
+            var nextTurn = prevTurn === "w" ? "b" : "w"
 
             socket.send(newPosFen.concat(" ", nextTurn));
         } else {
+            console.log("Illegal move: ".concat(newPosFen))
             return 'snapback'
         }
     }
