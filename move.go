@@ -28,7 +28,7 @@ func (m Move) IsEnPassantMove() bool {
 }
 
 func (m Move) IsCastleMove() bool {
-	return m.bits&0xC000 == 0xC00
+	return m.bits&0xC000 == 0xC000
 }
 
 func (m Move) Origin() int {

@@ -31,7 +31,7 @@ var whitePawnAttackMasks = WhitePawnAttackMasks()
 var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 // Castling empty square checks
-var wqSideCastleInBetweenMask = uint64(7)
+var wqSideCastleInBetweenMask = uint64(14)
 var wkCastleInBetweenMask = uint64(6) << 4
 var bqSideCastleInBetweenMask = uint64(7) << 56
 var bkSideCastleInBetweenMask = uint64(6) << 60
@@ -92,7 +92,6 @@ func GenerateLegalMoves(b BitBoard) []BitBoard {
 		nextState := transition(b, m, King)
 		newKingPos := m.Destination()
 		if !isChecked(nextState, newKingPos, nextState.Turn()) {
-			nextState.PrettyBoard()
 			nextStates = append(nextStates, nextState)
 		}
 	}
@@ -107,10 +106,10 @@ func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
 
 	if kingColor == White {
 		turnBoard = board.WhiteBB
-		attackingPawnMask = whitePawnAttackMasks[kingPos]
+		attackingPawnMask = blackPawnAttackMasks[kingPos]
 	} else {
 		turnBoard = board.BlackBB
-		attackingPawnMask = blackPawnAttackMasks[kingPos]
+		attackingPawnMask = whitePawnAttackMasks[kingPos]
 	}
 
 	bishopsAndQueens := board.BishopBB | board.QueenBB
@@ -516,17 +515,19 @@ func castlingMoves(bb BitBoard) []Move {
 	}
 	var validMoves []Move
 	if bb.Turn() == White {
-		if bb.WhiteCanCastleKingSite() && canCastle(wkCastleInBetweenMask) {
+		correctKingPos := bb.KingBB&bb.WhiteBB&posToBitBoard[4] > 0
+		if correctKingPos && bb.WhiteCanCastleKingSite() && canCastle(wkCastleInBetweenMask) {
 			validMoves = append(validMoves, wkCastleMove)
 		}
-		if bb.WhiteCanCastleQueenSite() && canCastle(wqSideCastleInBetweenMask) {
+		if correctKingPos && bb.WhiteCanCastleQueenSite() && canCastle(wqSideCastleInBetweenMask) {
 			validMoves = append(validMoves, wqCastleMove)
 		}
 	} else {
-		if bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInBetweenMask) {
+		correctKingPos := bb.KingBB&bb.WhiteBB&posToBitBoard[60] > 0
+		if correctKingPos && bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInBetweenMask) {
 			validMoves = append(validMoves, bkCastleMove)
 		}
-		if bb.BlackCanCastleQueenSite() && canCastle(bqSideCastleInBetweenMask) {
+		if correctKingPos && bb.BlackCanCastleQueenSite() && canCastle(bqSideCastleInBetweenMask) {
 			validMoves = append(validMoves, bqCastleMove)
 		}
 	}
@@ -542,6 +543,9 @@ func isCapture(bb BitBoard, m Move) bool {
 }
 
 func isValidEnPassantCapture(bb BitBoard, m Move) bool {
+	// TODO: Investigate adding 1 to the destination file.
+	// Adding 1 to the destination file gives the correct result for Perft(5) of the start position,
+	// but not adding 1 gives correct result for Perft(1) of "8/8/8/2k5/2pP4/8/B7/4K3 b - d3 0 3".
 	if file := bb.DoublePawnMoveFile(); file == (m.Destination()%8)+1 {
 		EnPassantCounter += 1
 		return true
