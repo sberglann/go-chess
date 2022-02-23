@@ -282,23 +282,23 @@ func BoardFromFEN(fen string) BitBoard {
 	}
 	switch {
 	case strings.Contains(enPassant, "a"):
-		flags |= uint32(0) << 1
-	case strings.Contains(enPassant, "b"):
 		flags |= uint32(1) << 1
-	case strings.Contains(enPassant, "c"):
+	case strings.Contains(enPassant, "b"):
 		flags |= uint32(2) << 1
-	case strings.Contains(enPassant, "d"):
+	case strings.Contains(enPassant, "c"):
 		flags |= uint32(3) << 1
-	case strings.Contains(enPassant, "e"):
+	case strings.Contains(enPassant, "d"):
 		flags |= uint32(4) << 1
-	case strings.Contains(enPassant, "f"):
+	case strings.Contains(enPassant, "e"):
 		flags |= uint32(5) << 1
-	case strings.Contains(enPassant, "g"):
+	case strings.Contains(enPassant, "f"):
 		flags |= uint32(6) << 1
-	case strings.Contains(enPassant, "h"):
+	case strings.Contains(enPassant, "g"):
 		flags |= uint32(7) << 1
-	default:
+	case strings.Contains(enPassant, "h"):
 		flags |= uint32(8) << 1
+	default:
+		flags |= uint32(0) << 1
 	}
 
 	if strings.Contains(castling, "K") {

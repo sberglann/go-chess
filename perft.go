@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,18 +14,12 @@ var CheckMateCounter int
 
 func Perft() {
 	start := time.Now()
-	var previousStates []BitBoard
-	b0 := StartBoard
-	//b0 := BoardFromFEN("8/8/8/2k5/2pP4/8/B7/4K3 b - d3 0 3")
-	b0.PrettyBoard()
-	previousStates = append(previousStates, b0)
-	for depth := 0; depth < 8; depth++ {
-		nextStates := perftStepPar(previousStates)
-		fmt.Println("Depth " + strconv.Itoa(depth+1) + ": " + strconv.Itoa(len(nextStates)) + " " + strconv.Itoa(EnPassantCounter) + " " + strconv.Itoa(CheckMateCounter) + " " + strconv.Itoa(CaptureCounter))
-		previousStates = nextStates
-	}
+	// TODO: Investigate why black can't castle in step two of case 10.
+	TestSingle(10)
+	TestAll()
 	elapsed := time.Since(start)
-	fmt.Printf("Time: %s", elapsed)
+
+	fmt.Printf("Time: %s\n\n", elapsed)
 }
 
 func perftStep(previousStates []BitBoard) []BitBoard {
@@ -39,13 +34,18 @@ func perftStep(previousStates []BitBoard) []BitBoard {
 func perftStepPar(previousStates []BitBoard) []BitBoard {
 	var nextStates = make([][]BitBoard, len(previousStates))
 
+	maxRoutines := 16
+	guard := make(chan struct{}, maxRoutines)
+
 	var wg sync.WaitGroup
 	wg.Add(len(previousStates))
 	resetCounters()
 	for i, b := range previousStates {
+		guard <- struct{}{}
 		go func(j int, b BitBoard) {
 			defer wg.Done()
 			nextStates[j] = GenerateLegalMoves(b)
+			<-guard
 		}(i, b)
 	}
 
@@ -62,4 +62,73 @@ func resetCounters() {
 	EnPassantCounter = 0
 	CaptureCounter = 0
 	CheckMateCounter = 0
+}
+
+type PerftTestCase struct {
+	id             int
+	board          BitBoard
+	expectedCounts []int
+}
+
+func TestSingle(id int) {
+	testCase := extractTestCases()[id]
+	testCase.board.PrettyBoard()
+	assertTestCase(testCase, true)
+}
+
+func TestAll() {
+	var passed int
+	var failed int
+
+	for _, testCase := range extractTestCases() {
+		if assertTestCase(testCase, false) {
+			passed += 1
+		} else {
+			failed += 1
+		}
+	}
+
+	s := fmt.Sprintf("%.2f", 100*float64(passed)/float64(passed+failed))
+	fmt.Println("Test run finished. Passed ", s, "%.")
+}
+
+func extractTestCases() []PerftTestCase {
+	lines, _ := ReadLines("resources/perft_answers.csv")
+	var cases []PerftTestCase
+	for i, line := range lines {
+		cases = append(cases, parseLine(i, line))
+	}
+	return cases
+}
+
+func parseLine(id int, line string) PerftTestCase {
+	split := strings.Split(line, ",")
+	fen, expectedCountsString := split[0], split[1:]
+
+	board := BoardFromFEN(fen)
+	var expectedCounts []int
+	for _, c := range expectedCountsString {
+		count, _ := strconv.Atoi(c)
+		if count < 1000000 {
+			expectedCounts = append(expectedCounts, count)
+		}
+	}
+	return PerftTestCase{id, board, expectedCounts}
+}
+
+func assertTestCase(testCase PerftTestCase, printCounts bool) bool {
+	var boards []BitBoard
+	boards = append(boards, testCase.board)
+	for step, expected := range testCase.expectedCounts {
+		boards = perftStepPar(boards)
+		if printCounts {
+			fmt.Println(testCase.id, "-", step, ":", len(boards), "vs", expected)
+		}
+		if len(boards) != expected {
+			fmt.Println("Failed perft no. ", testCase.id)
+			return false
+		}
+	}
+	fmt.Println("Passed perft no. ", testCase.id)
+	return true
 }

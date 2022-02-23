@@ -210,22 +210,22 @@ func FindMagic(square int, numBits int, piece Piece) uint64 {
 					line := strconv.Itoa(square) + ";" + strconv.FormatUint(key, 10) + ";" + strconv.FormatUint(attack, 10) + "\n"
 					if _, value := existing_entries[line]; !value {
 						existing_entries[line] = true
-						AppendToFile("move_tables/rook.txt", line)
+						AppendToFile("resources/move_tables/rook.txt", line)
 					}
 				} else {
 					attack := BishopAttacks(square, blocker)
 					line := strconv.Itoa(square) + ";" + strconv.FormatUint(key, 10) + ";" + strconv.FormatUint(attack, 10) + "\n"
 					if _, value := existing_entries[line]; !value {
 						existing_entries[line] = true
-						AppendToFile("move_tables/bishop.txt", line)
+						AppendToFile("resources/move_tables/bishop.txt", line)
 					}
 				}
 			}
 
 			if piece == Rook {
-				AppendToFile("move_tables/magics_rook.txt", strconv.Itoa(square)+";"+strconv.FormatUint(magic, 10)+"\n")
+				AppendToFile("resources/move_tables/magics_rook.txt", strconv.Itoa(square)+";"+strconv.FormatUint(magic, 10)+"\n")
 			} else {
-				AppendToFile("move_tables/magics_bishop.txt", strconv.Itoa(square)+";"+strconv.FormatUint(magic, 10)+"\n")
+				AppendToFile("resources/move_tables/magics_bishop.txt", strconv.Itoa(square)+";"+strconv.FormatUint(magic, 10)+"\n")
 			}
 
 			return magic
@@ -237,10 +237,10 @@ func FindMagic(square int, numBits int, piece Piece) uint64 {
 
 func GenerateMagics() {
 	var bishopMagics [64]uint64
-	DeleteFile("move_tables/magics_rook.txt")
-	DeleteFile("move_tables/magics_bishop.txt")
-	DeleteFile("move_tables/bishop.txt")
-	DeleteFile("move_tables/rook.txt")
+	DeleteFile("resources/move_tables/magics_rook.txt")
+	DeleteFile("resources/move_tables/magics_bishop.txt")
+	DeleteFile("resources/move_tables/bishop.txt")
+	DeleteFile("resources/move_tables/rook.txt")
 
 	pieces := [2]Piece{Rook, Bishop}
 

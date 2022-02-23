@@ -543,10 +543,8 @@ func isCapture(bb BitBoard, m Move) bool {
 }
 
 func isValidEnPassantCapture(bb BitBoard, m Move) bool {
-	// TODO: Investigate adding 1 to the destination file.
-	// Adding 1 to the destination file gives the correct result for Perft(5) of the start position,
-	// but not adding 1 gives correct result for Perft(1) of "8/8/8/2k5/2pP4/8/B7/4K3 b - d3 0 3".
-	if file := bb.DoublePawnMoveFile(); file == (m.Destination()%8)+1 {
+	destinationFile := (m.Destination() % 8) + 1
+	if bb.DoublePawnMoveFile() == destinationFile {
 		EnPassantCounter += 1
 		return true
 	} else {

@@ -35,7 +35,7 @@ func BishopMasks(includeEdges bool) map[int]uint64 {
 
 func BishopMagics() map[int]uint64 {
 	var mapping = make(map[int]uint64)
-	lines, _ := ReadLines("move_tables/magics_bishop.txt")
+	lines, _ := ReadLines("resources/move_tables/magics_bishop.txt")
 	for _, line := range lines {
 		split := strings.Split(line, ";")
 		pos, _ := strconv.Atoi(split[0])
@@ -55,7 +55,7 @@ func BishopBits() map[int]int {
 
 func BishopMoveTable() map[MagicKey]uint64 {
 	var mapping = make(map[MagicKey]uint64)
-	lines, _ := ReadLines("move_tables/bishop.txt")
+	lines, _ := ReadLines("resources/move_tables/bishop.txt")
 	for _, line := range lines {
 		split := strings.Split(line, ";")
 		pos, _ := strconv.Atoi(split[0])
@@ -76,7 +76,7 @@ func RookMasks(includeEdges bool) map[int]uint64 {
 
 func RookMagics() map[int]uint64 {
 	var mapping = make(map[int]uint64)
-	lines, _ := ReadLines("move_tables/magics_rook.txt")
+	lines, _ := ReadLines("resources/move_tables/magics_rook.txt")
 	for _, line := range lines {
 		split := strings.Split(line, ";")
 		pos, _ := strconv.Atoi(split[0])
@@ -96,7 +96,7 @@ func RookBits() map[int]int {
 
 func RookMoveTable() map[MagicKey]uint64 {
 	var mapping = make(map[MagicKey]uint64)
-	lines, _ := ReadLines("move_tables/rook.txt")
+	lines, _ := ReadLines("resources/move_tables/rook.txt")
 	for _, line := range lines {
 		split := strings.Split(line, ";")
 		pos, _ := strconv.Atoi(split[0])
