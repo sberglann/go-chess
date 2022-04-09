@@ -15,11 +15,17 @@ var CheckMateCounter int
 func Perft() {
 	start := time.Now()
 	// TODO: Investigate why black can't castle in step two of case 10.
-	TestSingle(10)
+	//TestSingle(1)
 	TestAll()
 	elapsed := time.Since(start)
-
 	fmt.Printf("Time: %s\n\n", elapsed)
+}
+
+func NumMoves(fen string) {
+	board := BoardFromFEN(fen)
+	states1 := GenerateLegalMoves(board)
+	states2 := perftStep(states1)
+	println(len(states2) + 1)
 }
 
 func perftStep(previousStates []BitBoard) []BitBoard {
@@ -122,13 +128,12 @@ func assertTestCase(testCase PerftTestCase, printCounts bool) bool {
 	for step, expected := range testCase.expectedCounts {
 		boards = perftStepPar(boards)
 		if printCounts {
-			fmt.Println(testCase.id, "-", step, ":", len(boards), "vs", expected)
+			fmt.Println(testCase.id, "-", step, ":", len(boards), "vs expected", expected)
 		}
 		if len(boards) != expected {
-			fmt.Println("Failed perft no. ", testCase.id)
+			fmt.Printf("Failed perft no. %03d at step %d\n", testCase.id, step)
 			return false
 		}
 	}
-	fmt.Println("Passed perft no. ", testCase.id)
 	return true
 }

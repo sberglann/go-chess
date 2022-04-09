@@ -31,52 +31,60 @@ var whitePawnAttackMasks = WhitePawnAttackMasks()
 var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 // Castling empty square checks
-var wqSideCastleInBetweenMask = uint64(14)
-var wkCastleInBetweenMask = uint64(6) << 4
-var bqSideCastleInBetweenMask = uint64(7) << 56
-var bkSideCastleInBetweenMask = uint64(6) << 60
+var wqSideCastleInBetweenMask = posToBitBoard[2] | posToBitBoard[3]
+var wkCastleInBetweenMask = posToBitBoard[5] | posToBitBoard[6]
+var bqSideCastleInBetweenMask = posToBitBoard[58] | posToBitBoard[59]
+var bkSideCastleInBetweenMask = posToBitBoard[61] | posToBitBoard[62]
 
-var wkCastleMove = Move{bits: uint32(0xC102)}
-var wqCastleMove = Move{bits: uint32(0xC106)}
-var bkCastleMove = Move{bits: uint32(0xCF02)}
-var bqCastleMove = Move{bits: uint32(0xCF3E)}
+var wqCastleMove = Move{bits: uint32(0xC102)}
+var wkCastleMove = Move{bits: uint32(0xC106)}
+var bkCastleMove = Move{bits: uint32(0xCF3E)}
+var bqCastleMove = Move{bits: uint32(0xCF3A)}
 
 func GenerateLegalMoves(b BitBoard) []BitBoard {
 	var nextStates []BitBoard
 	kings := b.KingBB & b.TurnBoard()
 	currentKingPos, _ := PopFistBit(kings)
 
-	for _, m := range pawnMoves(b) {
+	pawnMoves := pawnMoves(b)
+	knightMoves := knightMoves(b)
+	bishopMoves := bishopMoves(b)
+	rookMoves := rookMoves(b)
+	queenMoves := queenMoves(b)
+	kingMoves := kingMoves(b)
+	castlingMoves := castlingMoves(b)
+
+	for _, m := range pawnMoves {
 		nextState := transition(b, m, Pawn)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
 			nextStates = append(nextStates, nextState)
 		}
 	}
-	for _, m := range knightMoves(b) {
+	for _, m := range knightMoves {
 		nextState := transition(b, m, Knight)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
 			nextStates = append(nextStates, nextState)
 		}
 	}
-	for _, m := range bishopMoves(b) {
+	for _, m := range bishopMoves {
 		nextState := transition(b, m, Bishop)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
 			nextStates = append(nextStates, nextState)
 		}
 	}
-	for _, m := range rookMoves(b) {
+	for _, m := range rookMoves {
 		nextState := transition(b, m, Rook)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
 			nextStates = append(nextStates, nextState)
 		}
 	}
-	for _, m := range queenMoves(b) {
+	for _, m := range queenMoves {
 		nextState := transition(b, m, Queen)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
 			nextStates = append(nextStates, nextState)
 		}
 	}
-	for _, m := range kingMoves(b) {
+	for _, m := range kingMoves {
 		nextState := transition(b, m, King)
 		// Since the king move, we'll have to use the next position when looking for checks.
 		newKingPos := m.Destination()
@@ -84,16 +92,17 @@ func GenerateLegalMoves(b BitBoard) []BitBoard {
 			nextStates = append(nextStates, nextState)
 		}
 	}
-	if len(nextStates) == 0 {
-		CheckMateCounter += 1
-	}
 
-	for _, m := range castlingMoves(b) {
+	for _, m := range castlingMoves {
 		nextState := transition(b, m, King)
 		newKingPos := m.Destination()
 		if !isChecked(nextState, newKingPos, nextState.Turn()) {
 			nextStates = append(nextStates, nextState)
 		}
+	}
+
+	if len(nextStates) == 0 {
+		CheckMateCounter += 1
 	}
 
 	return nextStates
@@ -493,17 +502,9 @@ func queenMoves(bb BitBoard) []Move {
 func castlingMoves(bb BitBoard) []Move {
 	canCastle := func(inBetweenSquares uint64) bool {
 		if (bb.WhiteBB|bb.BlackBB)&inBetweenSquares == 0 {
-			inBetweenSquares := inBetweenSquares
 			for inBetweenSquares > 0 {
 				square, sqs := PopFistBit(inBetweenSquares)
 				inBetweenSquares = sqs
-				bb.KingBB &^= bb.TurnBoard()
-				bb.KingBB |= posToBitBoard[square]
-				if bb.Turn() == White {
-					bb.WhiteBB |= posToBitBoard[square]
-				} else {
-					bb.BlackBB |= posToBitBoard[square]
-				}
 				if isChecked(bb, square, bb.OppositeTurn()) {
 					return false
 				}
@@ -523,7 +524,7 @@ func castlingMoves(bb BitBoard) []Move {
 			validMoves = append(validMoves, wqCastleMove)
 		}
 	} else {
-		correctKingPos := bb.KingBB&bb.WhiteBB&posToBitBoard[60] > 0
+		correctKingPos := bb.KingBB&bb.BlackBB&posToBitBoard[60] > 0
 		if correctKingPos && bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInBetweenMask) {
 			validMoves = append(validMoves, bkCastleMove)
 		}

@@ -20,7 +20,7 @@ func (m Move) Destination() int {
 	return int(m.bits & 0x3F)
 }
 func (m Move) IsDoublePawnMove() bool {
-	return m.bits&0x8000 > 0
+	return m.bits&0xC000 == 0x8000
 }
 
 func (m Move) IsEnPassantMove() bool {
