@@ -31,9 +31,9 @@ var whitePawnAttackMasks = WhitePawnAttackMasks()
 var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 // Castling empty square checks
-var wqSideCastleInBetweenMask = posToBitBoard[2] | posToBitBoard[3]
+var wqSideCastleInBetweenMask = posToBitBoard[1] | posToBitBoard[2] | posToBitBoard[3]
 var wkCastleInBetweenMask = posToBitBoard[5] | posToBitBoard[6]
-var bqSideCastleInBetweenMask = posToBitBoard[58] | posToBitBoard[59]
+var bqSideCastleInBetweenMask = posToBitBoard[57] | posToBitBoard[58] | posToBitBoard[59]
 var bkSideCastleInBetweenMask = posToBitBoard[61] | posToBitBoard[62]
 
 var wqCastleMove = Move{bits: uint32(0xC102)}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"math"
 	"net/http"
 	"strings"
 )
@@ -37,17 +36,7 @@ func StartServer() {
 				nextMove = StartBoard
 			} else {
 				board := BoardFromFEN(receivedMessageString)
-				var bestMove BitBoard
-				var maxEval = -math.MaxFloat64
-				for _, move := range GenerateLegalMoves(board) {
-					eval := Eval(move)
-					if eval > maxEval {
-						maxEval = eval
-						bestMove = move
-					}
-				}
-				// For now, just pick a random move.
-				nextMove = bestMove
+				nextMove = BestMove(board)
 			}
 
 			legalMoves := GenerateLegalMoves(nextMove)

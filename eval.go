@@ -6,11 +6,7 @@ import (
 
 func Eval(board BitBoard) float64 {
 	score := material(board)
-	if board.OppositeTurn() == Black {
-		return -score
-	} else {
-		return score
-	}
+	return score
 }
 
 func material(board BitBoard) float64 {
