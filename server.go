@@ -26,7 +26,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(*http.Request) bool { return true },
 }
 
+var server *http.Server
+
 func StartServer() {
+
 	http.HandleFunc("/chess", func(w http.ResponseWriter, r *http.Request) {
 		conn, _ := upgrader.Upgrade(w, r, nil)
 		for {
@@ -42,6 +45,8 @@ func StartServer() {
 			var eval float64
 			if receivedMessageString == "init" {
 				nextMove = StartBoard
+			} else if receivedMessageString == "quit" {
+				server.Close()
 			} else {
 				board := BoardFromFEN(receivedMessageString)
 				evaluatedBoard := BestMove(board)
@@ -77,7 +82,11 @@ func StartServer() {
 		http.ServeFile(w, r, "gui/index.html")
 	})
 
-	http.ListenAndServe(":8080", nil)
+	server = &http.Server{
+		Addr:    ":8080",
+		Handler: nil,
+	}
+	server.ListenAndServe()
 }
 
 func extractLegalMoveResponse(previous BitBoard, next BitBoard) LegalMoveResponse {

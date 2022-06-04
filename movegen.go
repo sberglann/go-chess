@@ -122,7 +122,6 @@ func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
 	}
 
 	bishopsAndQueens := board.BishopBB | board.QueenBB
-	rooksAndQueens := board.RookBB | board.QueenBB
 
 	if bishopMasksWithEdges[kingPos]&bishopsAndQueens&turnBoard > 0 {
 		// The move resulted in a piece being moved from the diagonal where an opposing bishop can attack
@@ -132,7 +131,11 @@ func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
 		key := int((blockers * magic) >> (64 - bishopBits[kingPos]))
 		bishopAttackMask := bishopMoveTable[MagicKey{Square: kingPos, Key: key}]
 		isCheckByBishopOrQueen = bishopAttackMask&bishopsAndQueens&turnBoard > 0
+		if isCheckByBishopOrQueen {
+			return true
+		}
 	}
+	rooksAndQueens := board.RookBB | board.QueenBB
 	if rookMasksWithEdges[kingPos]&rooksAndQueens&turnBoard > 0 {
 		// Same as above, just with rooks instead
 		blockers := magicRookMasks[kingPos] & (board.WhiteBB | board.BlackBB)
@@ -140,14 +143,16 @@ func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
 		key := int((blockers * magic) >> (64 - rookBits[kingPos]))
 		rookAttackMask := rookMoveTable[MagicKey{Square: kingPos, Key: key}]
 		isCheckByRookOrQueen = rookAttackMask&rooksAndQueens&turnBoard > 0
+		if isCheckByRookOrQueen {
+			return true
+		}
 	}
 
 	isCheckByPawn := attackingPawnMask&board.PawnBB&turnBoard > 0
 	isCheckByKnight := knightMasks[kingPos]&board.KnightBB&turnBoard > 0
 	isCheckByKing := kingMasks[kingPos]&board.KingBB&turnBoard > 0
 
-	res := isCheckByBishopOrQueen || isCheckByRookOrQueen || isCheckByPawn || isCheckByKing || isCheckByKnight
-	return res
+	return isCheckByPawn || isCheckByKing || isCheckByKnight
 }
 
 func transition(b BitBoard, m Move, piece Piece) BitBoard {
@@ -163,21 +168,23 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	} else {
 		enPassantFile = 0
 	}
+	oppositeTurnBoard := b.OppositeTurnBoard()
 
 	switch {
-	case !isCapture(b, m):
+	case oppositeTurnBoard&destinationBB > 0:
+		// Not a capture
 		capturedPiece = Empty
-	case destinationBB&b.OppositeTurnBoard()&b.PawnBB > 0:
+	case destinationBB&oppositeTurnBoard&b.PawnBB > 0:
 		capturedPiece = Pawn
-	case destinationBB&b.OppositeTurnBoard()&b.KnightBB > 0:
+	case destinationBB&oppositeTurnBoard&b.KnightBB > 0:
 		capturedPiece = Knight
-	case destinationBB&b.OppositeTurnBoard()&b.BishopBB > 0:
+	case destinationBB&oppositeTurnBoard&b.BishopBB > 0:
 		capturedPiece = Bishop
-	case destinationBB&b.OppositeTurnBoard()&b.RookBB > 0:
+	case destinationBB&oppositeTurnBoard&b.RookBB > 0:
 		capturedPiece = Rook
-	case destinationBB&b.OppositeTurnBoard()&b.QueenBB > 0:
+	case destinationBB&oppositeTurnBoard&b.QueenBB > 0:
 		capturedPiece = Queen
-	case destinationBB&b.OppositeTurnBoard()&b.KingBB > 0:
+	case destinationBB&oppositeTurnBoard&b.KingBB > 0:
 		capturedPiece = King
 	}
 
@@ -367,13 +374,16 @@ func pawnMovesFromPos(bb BitBoard, origin int) []Move {
 		straightOffset = -8
 		doubleStraightOffset = -16
 	}
+
+	nextSquareIsEmpty := bb.IsEmpty(origin + straightOffset)
+
 	for _, m := range straight {
-		if bb.IsEmpty(m.Origin() + straightOffset) {
+		if nextSquareIsEmpty {
 			validMoves = append(validMoves, m)
 		}
 	}
 	for _, m := range double {
-		if bb.IsEmpty(m.Origin()+straightOffset) && bb.IsEmpty(m.Origin()+doubleStraightOffset) {
+		if nextSquareIsEmpty && bb.IsEmpty(origin+doubleStraightOffset) {
 			validMoves = append(validMoves, m)
 		}
 	}

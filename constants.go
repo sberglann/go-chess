@@ -11,15 +11,6 @@ var FileToLetter = map[int]string{
 	8: "h",
 }
 
-var PieceToMaterialScore = map[Piece]float64{
-	Pawn:   1.0,
-	Knight: 2.75,
-	Bishop: 3.0,
-	Rook:   5.0,
-	Queen:  9.0,
-	King:   100.0,
-}
-
 var IndexToAlgebraic = map[int]string{
 	0: "a1", 1: "b1", 2: "c1", 3: "d1", 4: "e1", 5: "f1", 6: "g1", 7: "h1",
 	8: "a2", 9: "b2", 10: "c2", 11: "d2", 12: "e2", 13: "f2", 14: "g2", 15: "h2",
