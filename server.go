@@ -9,8 +9,15 @@ import (
 )
 
 type MoveResponse struct {
-	Move       string   `json:"move"`
-	LegalMoves []string `json:"legalMoves"`
+	Move       string              `json:"move"`
+	LegalMoves []LegalMoveResponse `json:"legalMoves"`
+	Eval       float64             `json:"eval"`
+}
+
+type LegalMoveResponse struct {
+	ClientFen    string `json:"clientFen"`
+	TrueFen      string `json:"trueFen"`
+	IsCastleMove bool   `json:"IsCastleMove"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -30,22 +37,26 @@ func StartServer() {
 			}
 			receivedMessageString := string(receivedMessage)
 
-			var legalFenMoves []string
+			var legalStates []LegalMoveResponse
 			var nextMove BitBoard
+			var eval float64
 			if receivedMessageString == "init" {
 				nextMove = StartBoard
 			} else {
 				board := BoardFromFEN(receivedMessageString)
-				nextMove = BestMove(board)
+				evaluatedBoard := BestMove(board)
+				nextMove = evaluatedBoard.board
+				eval = evaluatedBoard.eval
+
 			}
 
-			legalMoves := GenerateLegalMoves(nextMove)
+			legalMoves := GenerateLegalStates(nextMove)
 
 			for _, move := range legalMoves {
-				onlyPieces := strings.Split(move.ToFEN(), " ")[0]
-				legalFenMoves = append(legalFenMoves, onlyPieces)
+				lmr := extractLegalMoveResponse(nextMove, move)
+				legalStates = append(legalStates, lmr)
 			}
-			response := &MoveResponse{nextMove.ToFEN(), legalFenMoves}
+			response := &MoveResponse{nextMove.ToFEN(), legalStates, eval}
 			message, err := json.Marshal(response)
 			if err != nil {
 				fmt.Println(err)
@@ -67,4 +78,29 @@ func StartServer() {
 	})
 
 	http.ListenAndServe(":8080", nil)
+}
+
+func extractLegalMoveResponse(previous BitBoard, next BitBoard) LegalMoveResponse {
+	whiteKingWasInPosition := previous.KingBB&previous.WhiteBB&posToBitBoard[4] > 0
+	wkCastle := next.KingBB&next.WhiteBB&posToBitBoard[6] > 0
+	wqCastle := next.KingBB&next.WhiteBB&posToBitBoard[2] > 0
+	isCastleMove := false
+	trueFen := strings.Split(next.ToFEN(), " ")[0]
+
+	if whiteKingWasInPosition && wkCastle && previous.WhiteCanCastleKingSite() {
+		next.RookBB &^= posToBitBoard[5]
+		next.RookBB |= posToBitBoard[7]
+		next.WhiteBB &^= posToBitBoard[5]
+		next.WhiteBB |= posToBitBoard[7]
+		isCastleMove = true
+	} else if whiteKingWasInPosition && wqCastle && previous.WhiteCanCastleQueenSite() {
+		next.RookBB &^= posToBitBoard[3]
+		next.RookBB |= posToBitBoard[0]
+		next.WhiteBB &^= posToBitBoard[3]
+		next.WhiteBB |= posToBitBoard[0]
+		isCastleMove = true
+	}
+	clientFen := strings.Split(next.ToFEN(), " ")[0]
+
+	return LegalMoveResponse{TrueFen: trueFen, ClientFen: clientFen, IsCastleMove: isCastleMove}
 }

@@ -16,6 +16,31 @@ type Move struct {
 	bits uint32
 }
 
+func (m Move) toAlgebraicNotation() []string {
+	if !m.IsCastleMove() {
+		o := IndexToAlgebraic[m.Origin()]
+		d := IndexToAlgebraic[m.Destination()]
+		return []string{o + "-" + d}
+	} else {
+		if m.Destination() == 2 {
+			// White queen side
+			return []string{"e1-c1", "a1-d1"}
+		} else if m.Destination() == 6 {
+			// White king side
+			return []string{"e1-g1", "h1-f1"}
+		} else if m.Destination() == 56 {
+			// Black queen side
+			return []string{"e8-c8", "a8-d8"}
+		} else if m.Destination() == 62 {
+			// White king side
+			return []string{"e8-g8", "h8-f8"}
+		} else {
+			println("No castle match when computing algebraic notation.")
+			return []string{}
+		}
+	}
+}
+
 func (m Move) Destination() int {
 	return int(m.bits & 0x3F)
 }

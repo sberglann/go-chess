@@ -38,12 +38,13 @@
 
     function onDrop(source, target, piece, newPos, oldPos, orientation) {
         const newPosFen = Chessboard.objToFen(newPos)
-        if (legalMoves.includes(newPosFen)) {
+        var move = legalMoves.find(value => value.clientFen === newPosFen)
+        if (move) {
             console.log('New position: ' + Chessboard.objToFen(newPos))
             var prevTurn = piece[0]
             var nextTurn = prevTurn === "w" ? "b" : "w"
-
-            socket.send(newPosFen.concat(" ", nextTurn));
+            board.position(move.trueFen, false);
+            socket.send(move.trueFen.concat(" ", nextTurn));
         } else {
             console.log("Illegal move: ".concat(newPosFen))
             return 'snapback'

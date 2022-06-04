@@ -12,10 +12,11 @@ type EvaluatedBoard struct {
 
 const maxDepth = 5
 
-func BestMove(board BitBoard) BitBoard {
+func BestMove(board BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
+	var bestEval float64
 
-	legalMoves := GenerateLegalMoves(board)
+	legalMoves := GenerateLegalStates(board)
 	maxRoutines := 16
 	guard := make(chan struct{}, maxRoutines)
 	var evals = make([]EvaluatedBoard, len(legalMoves))
@@ -37,6 +38,7 @@ func BestMove(board BitBoard) BitBoard {
 		for _, evaledBoard := range evals {
 			if evaledBoard.eval > maxEval {
 				maxEval = evaledBoard.eval
+				bestEval = maxEval
 				bestMove = evaledBoard.board
 			}
 		}
@@ -56,16 +58,17 @@ func BestMove(board BitBoard) BitBoard {
 		for _, evaledBoard := range evals {
 			if evaledBoard.eval < minEval {
 				minEval = evaledBoard.eval
+				bestEval = minEval
 				bestMove = evaledBoard.board
 			}
 		}
 	}
 
-	return bestMove
+	return EvaluatedBoard{bestMove, bestEval}
 }
 
 func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float64) float64 {
-	children := GenerateLegalMoves(board)
+	children := GenerateLegalStates(board)
 	var sign int
 	if isWhite {
 		sign = 1

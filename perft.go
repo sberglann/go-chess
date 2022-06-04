@@ -23,7 +23,7 @@ func Perft() {
 
 func NumMoves(fen string) {
 	board := BoardFromFEN(fen)
-	states1 := GenerateLegalMoves(board)
+	states1 := GenerateLegalStates(board)
 	states2 := perftStep(states1)
 	println(len(states2) + 1)
 }
@@ -32,7 +32,7 @@ func perftStep(previousStates []BitBoard) []BitBoard {
 	var nextStates []BitBoard
 	resetCounters()
 	for _, b := range previousStates {
-		nextStates = append(nextStates, GenerateLegalMoves(b)...)
+		nextStates = append(nextStates, GenerateLegalStates(b)...)
 	}
 	return nextStates
 }
@@ -50,7 +50,7 @@ func perftStepPar(previousStates []BitBoard) []BitBoard {
 		guard <- struct{}{}
 		go func(j int, b BitBoard) {
 			defer wg.Done()
-			nextStates[j] = GenerateLegalMoves(b)
+			nextStates[j] = GenerateLegalStates(b)
 			<-guard
 		}(i, b)
 	}

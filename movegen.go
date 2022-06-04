@@ -41,7 +41,7 @@ var wkCastleMove = Move{bits: uint32(0xC106)}
 var bkCastleMove = Move{bits: uint32(0xCF3E)}
 var bqCastleMove = Move{bits: uint32(0xCF3A)}
 
-func GenerateLegalMoves(b BitBoard) []BitBoard {
+func GenerateLegalStates(b BitBoard) []BitBoard {
 	var nextStates []BitBoard
 	kings := b.KingBB & b.TurnBoard()
 	currentKingPos, _ := PopFistBit(kings)
