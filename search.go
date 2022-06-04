@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"math/rand"
 	"sync"
 )
 
@@ -11,6 +12,8 @@ type EvaluatedBoard struct {
 }
 
 const maxDepth = 5
+const deterministic = false
+const randomRange = 0.001
 
 func BestMove(board BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
@@ -29,7 +32,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			go func(j int, b BitBoard) {
 				defer wg.Done()
 				eval := minimax(b, 1, false, math.Inf(-1), math.Inf(1))
-				evals[j] = EvaluatedBoard{b, eval}
+				evals[j] = EvaluatedBoard{b, eval * randomFactor()}
 				<-guard
 			}(i, b)
 		}
@@ -49,7 +52,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			go func(j int, b BitBoard) {
 				defer wg.Done()
 				eval := minimax(b, 1, true, math.Inf(-1), math.Inf(1))
-				evals[j] = EvaluatedBoard{b, eval}
+				evals[j] = EvaluatedBoard{b, eval * randomFactor()}
 				<-guard
 			}(i, b)
 		}
@@ -111,5 +114,13 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 			}
 		}
 		return best
+	}
+}
+
+func randomFactor() float64 {
+	if deterministic {
+		return 1.0
+	} else {
+		return (1.0 - randomRange) + rand.Float64()*randomRange
 	}
 }
