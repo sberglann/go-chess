@@ -62,7 +62,7 @@ func (b BitBoard) OppositeTurnBoard() uint64 {
 }
 
 func (b BitBoard) Turn() Color {
-	if value := BitAt32(b.Flags, 0); value == 0 {
+	if BitAt32(b.Flags, 0) == 0 {
 		return White
 	} else {
 		return Black
@@ -102,7 +102,7 @@ func (b BitBoard) BlackCanCastleQueenSite() bool {
 }
 
 func (b BitBoard) IsEmpty(pos int) bool {
-	res := posToBitBoard[pos]&(b.WhiteBB|b.BlackBB) == 0
+	res := posToBitBoard(pos)&(b.WhiteBB|b.BlackBB) == 0
 	return res
 }
 
@@ -152,6 +152,52 @@ func (b BitBoard) PrettyBoard() {
 		fmt.Println()
 	}
 	println("------------------------")
+}
+
+func (b BitBoard) DebugBoard() string {
+	var result string
+	print := func(board uint64) {
+		for i := 7; i >= 0; i-- {
+			for j := 0; j < 8; j++ {
+				pos := i*8 + j
+				if BitAt64(board, pos) == 1 {
+					result += " 1 "
+				} else {
+					result += " 0 "
+				}
+			}
+			result += "\n"
+		}
+		result += "------------------------\n"
+	}
+
+	result += "White\n"
+	print(b.WhiteBB)
+	result += "Black\n"
+	print(b.BlackBB)
+	result += "Pawns\n"
+	print(b.PawnBB)
+	result += "Knights\n"
+	print(b.KnightBB)
+	result += "Bishops\n"
+	print(b.BishopBB)
+	result += "Rooks\n"
+	print(b.RookBB)
+	result += "Queens\n"
+	print(b.QueenBB)
+	result += "Kings\n"
+	print(b.KingBB)
+
+	result += "Flags\n"
+	for i := 0; i < 32; i++ {
+		if BitAt32(b.Flags, i) == 1 {
+			result += "1"
+		} else {
+			result += "0"
+		}
+	}
+	fmt.Println(result)
+	return result
 }
 
 func (b BitBoard) ToFEN() string {
@@ -237,7 +283,11 @@ func (b BitBoard) ToFEN() string {
 	return strings.Join(values, " ")
 }
 
-var posToBitBoard = PosToBitBoard()
+func posToBitBoard(i int) uint64 {
+	return uint64(1) << i
+}
+
+var posToBitBoardLol = PosToBitBoard()
 
 func IndexToCartesian(pos int) (int, int) {
 	rank := pos/8 + 1

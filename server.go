@@ -90,23 +90,23 @@ func StartServer() {
 }
 
 func extractLegalMoveResponse(previous BitBoard, next BitBoard) LegalMoveResponse {
-	whiteKingWasInPosition := previous.KingBB&previous.WhiteBB&posToBitBoard[4] > 0
-	wkCastle := next.KingBB&next.WhiteBB&posToBitBoard[6] > 0
-	wqCastle := next.KingBB&next.WhiteBB&posToBitBoard[2] > 0
+	whiteKingWasInPosition := previous.KingBB&previous.WhiteBB&posToBitBoard(4) > 0
+	wkCastle := next.KingBB&next.WhiteBB&posToBitBoard(6) > 0
+	wqCastle := next.KingBB&next.WhiteBB&posToBitBoard(2) > 0
 	isCastleMove := false
-	trueFen := strings.Split(next.ToFEN(), " ")[0]
+	trueFen := next.ToFEN()
 
 	if whiteKingWasInPosition && wkCastle && previous.WhiteCanCastleKingSite() {
-		next.RookBB &^= posToBitBoard[5]
-		next.RookBB |= posToBitBoard[7]
-		next.WhiteBB &^= posToBitBoard[5]
-		next.WhiteBB |= posToBitBoard[7]
+		next.RookBB &^= posToBitBoard(5)
+		next.RookBB |= posToBitBoard(7)
+		next.WhiteBB &^= posToBitBoard(5)
+		next.WhiteBB |= posToBitBoard(7)
 		isCastleMove = true
 	} else if whiteKingWasInPosition && wqCastle && previous.WhiteCanCastleQueenSite() {
-		next.RookBB &^= posToBitBoard[3]
-		next.RookBB |= posToBitBoard[0]
-		next.WhiteBB &^= posToBitBoard[3]
-		next.WhiteBB |= posToBitBoard[0]
+		next.RookBB &^= posToBitBoard(3)
+		next.RookBB |= posToBitBoard(0)
+		next.WhiteBB &^= posToBitBoard(3)
+		next.WhiteBB |= posToBitBoard(0)
 		isCastleMove = true
 	}
 	clientFen := strings.Split(next.ToFEN(), " ")[0]
