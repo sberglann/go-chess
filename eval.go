@@ -5,7 +5,9 @@ import (
 )
 
 func Eval(board BitBoard) float64 {
-	score := material(board)
+	p := psq(board) / 100
+	m := material(board)
+	score := p + m
 	return score
 }
 
@@ -29,5 +31,33 @@ func material(board BitBoard) float64 {
 		float64(bits.OnesCount64(board.BlackBB&board.BishopBB))*bishopWeight -
 		float64(bits.OnesCount64(board.BlackBB&board.RookBB))*rookWeight -
 		float64(bits.OnesCount64(board.BlackBB&board.QueenBB))*queenWeight
+}
+
+func psq(board BitBoard) float64 {
+	score := func(pieceBoard uint64, psq map[int]float64, isBlack bool) float64 {
+		var sum float64
+		for pieceBoard > 0 {
+			bit, pb := PopFistBit(pieceBoard)
+			pieceBoard = pb
+			if isBlack {
+				sum += psq[63-bit]
+			} else {
+				sum += psq[bit]
+			}
+		}
+		return sum
+	}
+	return score(board.WhiteBB&board.PawnBB, PsqPawn, false) +
+		score(board.WhiteBB&board.KnightBB, PsqKnight, false) +
+		score(board.WhiteBB&board.BishopBB, PsqBishop, false) +
+		score(board.WhiteBB&board.RookBB, PsqRook, false) +
+		score(board.WhiteBB&board.QueenBB, PsqQueen, false) +
+		score(board.WhiteBB&board.KingBB, PsqKing, false) +
+		score(board.BlackBB&board.PawnBB, PsqPawn, true) +
+		score(board.BlackBB&board.KnightBB, PsqKnight, true) +
+		score(board.BlackBB&board.BishopBB, PsqBishop, true) +
+		score(board.BlackBB&board.RookBB, PsqRook, true) +
+		score(board.BlackBB&board.QueenBB, PsqQueen, true) +
+		score(board.BlackBB&board.KingBB, PsqKing, true)
 
 }

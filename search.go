@@ -13,7 +13,7 @@ type EvaluatedBoard struct {
 
 const maxDepth = 5
 const deterministic = false
-const randomRange = 0.001
+const randomRange = 0.1
 
 func BestMove(board BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
