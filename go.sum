@@ -1,4 +1,8 @@
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/tmthrgd/go-popcount v0.0.0-20190904054823-afb1ace8b04f h1:Phf2p9+twoHct5ZjSTrI8K7iWeSxO4x1p5pShTl0J00=
-github.com/tmthrgd/go-popcount v0.0.0-20190904054823-afb1ace8b04f/go.mod h1:FcUQfrsAsSSqM3n9xf4EtPzB8tWzt58/y0AV+wNNM8Q=
+github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
+github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
+github.com/zond/gotomic v0.0.0-20160912093511-c442ca1e4aa6 h1:YmxpZlE9hkP4Wgx7i2RIA6o2Gmvcyoffc3SR/r+vjxc=
+github.com/zond/gotomic v0.0.0-20160912093511-c442ca1e4aa6/go.mod h1:lfLoUEAewHQJgm/Xyo4SlOsbp9a8sFUhBGdyn0lWcYQ=
+stathat.com/c/treap v1.0.0 h1:asTg9br7PAWRR+5aPP94K3z3ZBV4xignky0vXQMVmGU=
+stathat.com/c/treap v1.0.0/go.mod h1:CIuZP0dGFuR44/xmsFzBdF6wyVhjOzIICNlXT7yNQNI=

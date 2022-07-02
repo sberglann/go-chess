@@ -20,6 +20,33 @@ const (
 	kingWeight   = 100.0
 )
 
+var (
+	PsqPawnWhiteEarly   = extractPsqScores(psqPawn, true, true)
+	PsqPawnWhiteLate    = extractPsqScores(psqPawn, false, true)
+	PsqPawnBlackEarly   = extractPsqScores(psqPawn, true, false)
+	PsqPawnBlackLate    = extractPsqScores(psqPawn, false, false)
+	PsqKnightWhiteEarly = extractPsqScores(psqKnight, true, true)
+	PsqKnightWhiteLate  = extractPsqScores(psqKnight, false, true)
+	PsqKnightBlackEarly = extractPsqScores(psqKnight, true, false)
+	PsqKnightBlackLate  = extractPsqScores(psqKnight, false, false)
+	PsqBishopWhiteEarly = extractPsqScores(psqBishop, true, true)
+	PsqBishopWhiteLate  = extractPsqScores(psqBishop, false, true)
+	PsqBishopBlackEarly = extractPsqScores(psqBishop, true, false)
+	PsqBishopBlackLate  = extractPsqScores(psqBishop, false, false)
+	PsqRookWhiteEarly   = extractPsqScores(psqRook, true, true)
+	PsqRookWhiteLate    = extractPsqScores(psqRook, false, true)
+	PsqRookBlackEarly   = extractPsqScores(psqRook, true, false)
+	PsqRookBlackLate    = extractPsqScores(psqRook, false, false)
+	PsqQueenWhiteEarly  = extractPsqScores(psqQueen, true, true)
+	PsqQueenWhiteLate   = extractPsqScores(psqQueen, false, true)
+	PsqQueenBlackEarly  = extractPsqScores(psqQueen, true, false)
+	PsqQueenBlackLate   = extractPsqScores(psqQueen, false, false)
+	PsqKingWhiteEarly   = extractPsqScores(psqKing, true, true)
+	PsqKingWhiteLate    = extractPsqScores(psqKing, false, true)
+	PsqKingBlackLate    = extractPsqScores(psqKing, false, false)
+	PsqKingBlackEarly   = extractPsqScores(psqKing, true, false)
+)
+
 func material(board BitBoard) float64 {
 	return float64(bits.OnesCount64(board.WhiteBB&board.PawnBB))*pawnWeight +
 		float64(bits.OnesCount64(board.WhiteBB&board.KnightBB))*knightWeigh +
@@ -34,30 +61,63 @@ func material(board BitBoard) float64 {
 }
 
 func psq(board BitBoard) float64 {
-	score := func(pieceBoard uint64, psq map[int]float64, isBlack bool) float64 {
+	score := func(pieceBoard uint64, psq map[int]float64) float64 {
 		var sum float64
 		for pieceBoard > 0 {
 			bit, pb := PopFistBit(pieceBoard)
 			pieceBoard = pb
-			if isBlack {
-				sum += psq[63-bit]
-			} else {
-				sum += psq[bit]
-			}
+			sum += psq[bit]
 		}
 		return sum
 	}
-	return score(board.WhiteBB&board.PawnBB, PsqPawn, false) +
-		score(board.WhiteBB&board.KnightBB, PsqKnight, false) +
-		score(board.WhiteBB&board.BishopBB, PsqBishop, false) +
-		score(board.WhiteBB&board.RookBB, PsqRook, false) +
-		score(board.WhiteBB&board.QueenBB, PsqQueen, false) +
-		score(board.WhiteBB&board.KingBB, PsqKing, false) +
-		score(board.BlackBB&board.PawnBB, PsqPawn, true) +
-		score(board.BlackBB&board.KnightBB, PsqKnight, true) +
-		score(board.BlackBB&board.BishopBB, PsqBishop, true) +
-		score(board.BlackBB&board.RookBB, PsqRook, true) +
-		score(board.BlackBB&board.QueenBB, PsqQueen, true) +
-		score(board.BlackBB&board.KingBB, PsqKing, true)
+	if board.TurnCount() <= 40 {
+		return score(board.WhiteBB&board.PawnBB, PsqPawnWhiteEarly) +
+			score(board.WhiteBB&board.KnightBB, PsqKnightWhiteEarly) +
+			score(board.WhiteBB&board.BishopBB, PsqBishopWhiteEarly) +
+			score(board.WhiteBB&board.RookBB, PsqRookWhiteEarly) +
+			score(board.WhiteBB&board.QueenBB, PsqQueenWhiteEarly) +
+			score(board.WhiteBB&board.KingBB, PsqKingWhiteEarly) -
+			score(board.BlackBB&board.PawnBB, PsqPawnBlackEarly) -
+			score(board.BlackBB&board.KnightBB, PsqKnightBlackEarly) -
+			score(board.BlackBB&board.BishopBB, PsqBishopBlackEarly) -
+			score(board.BlackBB&board.RookBB, PsqRookBlackEarly) -
+			score(board.BlackBB&board.QueenBB, PsqQueenBlackEarly) -
+			score(board.BlackBB&board.KingBB, PsqKingBlackEarly)
+	} else {
+		return score(board.WhiteBB&board.PawnBB, PsqPawnWhiteLate) +
+			score(board.WhiteBB&board.KnightBB, PsqKnightWhiteLate) +
+			score(board.WhiteBB&board.BishopBB, PsqBishopWhiteLate) +
+			score(board.WhiteBB&board.RookBB, PsqRookWhiteLate) +
+			score(board.WhiteBB&board.QueenBB, PsqQueenWhiteLate) +
+			score(board.WhiteBB&board.KingBB, PsqKingWhiteLate) -
+			score(board.BlackBB&board.PawnBB, PsqPawnBlackLate) -
+			score(board.BlackBB&board.KnightBB, PsqKnightBlackLate) -
+			score(board.BlackBB&board.BishopBB, PsqBishopBlackLate) -
+			score(board.BlackBB&board.RookBB, PsqRookBlackLate) -
+			score(board.BlackBB&board.QueenBB, PsqQueenBlackLate) -
+			score(board.BlackBB&board.KingBB, PsqKingBlackLate)
+	}
+}
 
+func extractPsqScores(psq [][]int, earlyGame bool, white bool) map[int]float64 {
+	// create a map based on psq and use the first element if earlyGame is true
+	psqMap := make(map[int]float64)
+	for i, values := range psq {
+		var square int
+		if white {
+			square = i
+		} else {
+			rank := i / 8
+			file := i % 8
+			sq := (8-rank)*8 - (8 - file)
+			square = sq
+		}
+		if earlyGame {
+			psqMap[square] = float64(values[0]) / 100
+		} else {
+			psqMap[square] = float64(values[1]) / 100
+		}
+	}
+
+	return psqMap
 }

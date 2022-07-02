@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -86,7 +87,10 @@ func StartServer() {
 		Addr:    ":8080",
 		Handler: nil,
 	}
-	server.ListenAndServe()
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func extractLegalMoveResponse(previous BitBoard, next BitBoard) LegalMoveResponse {

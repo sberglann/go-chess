@@ -45,6 +45,10 @@ var StartBoard = BitBoard{
 	Flags:    uint32(0x000001FE),
 }
 
+func (b BitBoard) TurnCount() int {
+	return int(b.Flags >> 17)
+}
+
 func (b BitBoard) TurnBoard() uint64 {
 	if b.Turn() == White {
 		return b.WhiteBB

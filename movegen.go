@@ -212,6 +212,9 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	// Clear previous double pawn move flag
 	flags &^= uint32(0b11110)
 
+	flags &^= uint32(0b111111111111111) << 17
+	flags |= uint32(b.TurnCount()+1) << 17
+
 	if m.IsDoublePawnMove() {
 		dpfile := (m.Destination() % 8) + 1
 		flags |= (uint32(dpfile << 1))

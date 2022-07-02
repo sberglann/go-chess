@@ -13,7 +13,7 @@ type EvaluatedBoard struct {
 
 const maxDepth = 5
 const deterministic = false
-const randomRange = 0.1
+const randomRange = 0
 
 func BestMove(board BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
@@ -80,7 +80,7 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 	}
 	if len(children) <= 0 {
 		// Check mate
-		return math.Inf(-sign)
+		return float64(sign * -1000.0)
 	} else if depth >= maxDepth {
 		maxEval := math.Inf(-1)
 		for _, child := range children {
