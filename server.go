@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type MoveResponse struct {
@@ -84,8 +85,10 @@ func StartServer() {
 	})
 
 	server = &http.Server{
-		Addr:    ":8080",
-		Handler: nil,
+		Addr:         ":8080",
+		Handler:      nil,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
 	}
 	err := server.ListenAndServe()
 	if err != nil {
