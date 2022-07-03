@@ -44,6 +44,9 @@ var bqCastleMove = Move{bits: uint32(0xCF3A)}
 func GenerateLegalStates(b BitBoard) []BitBoard {
 	var nextStates []BitBoard
 	kings := b.KingBB & b.TurnBoard()
+	if kings <= 0 {
+		return nil
+	}
 	currentKingPos, _ := PopFistBit(kings)
 
 	pawnMoves := pawnMoves(b)

@@ -40,7 +40,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			}(i, b)
 		}
 		wg.Wait()
-		maxEval := math.Inf(-1)
+		maxEval := -1000.0
 		for _, evaledBoard := range evals {
 			if evaledBoard.eval > maxEval {
 				maxEval = evaledBoard.eval
@@ -60,7 +60,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			}(i, b)
 		}
 		wg.Wait()
-		minEval := math.Inf(1)
+		minEval := 1000.0
 		for _, evaledBoard := range evals {
 			if evaledBoard.eval < minEval {
 				minEval = evaledBoard.eval
@@ -75,28 +75,38 @@ func BestMove(board BitBoard) EvaluatedBoard {
 
 func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float64) float64 {
 	children := GenerateLegalStates(board)
-	var sign int
 	if isWhite {
-		sign = 1
-	} else {
-		sign = -1
-	}
-	if len(children) <= 0 {
-		// Check mate
-		return float64(sign * -1000.0)
-	} else if depth >= maxDepth {
-		maxEval := math.Inf(-1)
-		for _, child := range children {
-			eval := Eval(child)
-			if eval > maxEval {
-				maxEval = eval
+		if len(children) <= 0 {
+			return 1000.0
+		} else if depth >= maxDepth {
+			maxEval := -1000.0
+			for _, child := range children {
+				eval := Eval(child)
+				memo.Set(child.Hash(), eval)
+				if eval > maxEval {
+					maxEval = eval
+				}
 			}
+			return maxEval
 		}
-		return maxEval
+	} else {
+		if len(children) <= 0 {
+			return -1000.0
+		} else if depth >= maxDepth {
+			minEval := 1000.0
+			for _, child := range children {
+				eval := Eval(child)
+				memo.Set(child.Hash(), eval)
+				if eval < minEval {
+					minEval = eval
+				}
+			}
+			return minEval
+		}
 	}
 
 	if isWhite {
-		best := math.Inf(-1)
+		best := -1000.0
 		for _, child := range children {
 			key := child.Hash()
 			cachedValue, isCached := memo.Get(key)
@@ -105,7 +115,6 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 				value = cachedValue.(float64)
 			} else {
 				value = minimax(child, depth+1, false, alpha, beta)
-				memo.Set(key, value)
 			}
 			best = math.Max(best, value)
 			alpha = math.Max(alpha, best)
@@ -124,7 +133,6 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 				value = cachedValue.(float64)
 			} else {
 				value = minimax(child, depth+1, true, alpha, beta)
-				memo.Set(key, value)
 			}
 			best = math.Min(best, value)
 			beta = math.Min(beta, best)
