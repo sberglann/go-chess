@@ -45,6 +45,32 @@ var StartBoard = BitBoard{
 	Flags:    uint32(0x000001FE),
 }
 
+func (b BitBoard) Hash() uint64 {
+	combine := func(a uint64, b uint64) uint64 {
+		return a + 0x9e3779b9 + (b << 6) + (a >> 2)
+	}
+
+	mix := func(x uint64) uint64 {
+		//https: //en.wikipedia.org/wiki/MurmurHash
+		x ^= x >> 33
+		x *= 0xff51afd7ed558ccd
+		x ^= x >> 33
+		x *= 0xc4ceb9fe1a85ec53
+		x ^= x >> 33
+		return x
+	}
+
+	h := mix(b.WhiteBB)
+	h = combine(h, mix(b.BlackBB))
+	h = combine(h, mix(b.PawnBB))
+	h = combine(h, mix(b.KnightBB))
+	h = combine(h, mix(b.BishopBB))
+	h = combine(h, mix(b.RookBB))
+	h = combine(h, mix(b.QueenBB))
+	h = combine(h, mix(b.KingBB))
+	return h
+}
+
 func (b BitBoard) TurnCount() int {
 	return int(b.Flags >> 17)
 }
@@ -106,8 +132,11 @@ func (b BitBoard) BlackCanCastleQueenSite() bool {
 }
 
 func (b BitBoard) IsEmpty(pos int) bool {
-	res := posToBitBoard(pos)&(b.WhiteBB|b.BlackBB) == 0
-	return res
+	if pos > 0 {
+		return posToBitBoard(pos)&(b.WhiteBB|b.BlackBB) == 0
+	} else {
+		return true
+	}
 }
 
 func (b BitBoard) PieceAt(pos int) ColoredPiece {

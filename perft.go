@@ -64,14 +64,17 @@ func PerformanceTest() {
 
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	stamp := time.Now().UnixNano() / int64(time.Millisecond)
+	start := time.Now()
 	for i, position := range positions {
+		moveStart := time.Now()
 		board := BoardFromFEN(position)
 		BestMove(board)
-		newStamp := time.Now().UnixNano() / int64(time.Millisecond)
-		println("Position", i, "took", newStamp-stamp, "ms")
-		stamp = newStamp
+
+		moveElapsed := time.Since(moveStart)
+		println("Position", i, "took", moveElapsed.Milliseconds(), "ms")
 	}
+	totalTime := time.Since(start)
+	println("Total time:", totalTime.Milliseconds(), "ms")
 }
 
 func NumMoves(fen string) {

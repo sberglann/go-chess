@@ -1,8 +1,6 @@
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
-github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
-github.com/zond/gotomic v0.0.0-20160912093511-c442ca1e4aa6 h1:YmxpZlE9hkP4Wgx7i2RIA6o2Gmvcyoffc3SR/r+vjxc=
-github.com/zond/gotomic v0.0.0-20160912093511-c442ca1e4aa6/go.mod h1:lfLoUEAewHQJgm/Xyo4SlOsbp9a8sFUhBGdyn0lWcYQ=
-stathat.com/c/treap v1.0.0 h1:asTg9br7PAWRR+5aPP94K3z3ZBV4xignky0vXQMVmGU=
-stathat.com/c/treap v1.0.0/go.mod h1:CIuZP0dGFuR44/xmsFzBdF6wyVhjOzIICNlXT7yNQNI=
+github.com/kpango/fastime v1.0.0 h1:tZeI+eEyHHYKkTkKOiOZ5MeeRJmliuZlGV7aK7S2rkE=
+github.com/kpango/fastime v1.0.0/go.mod h1:Y5XY5bLG5yc7g2XmMUzc22XYV1XaH+KgUOHkDvLp4SA=
+github.com/sberglann/uint64gocache v0.0.0-20220703135934-730cffe61cd3 h1:7Vzhlj4QXB+BxC8LU9GqqTNs2tWhOi1k1+e684NutRw=
+github.com/sberglann/uint64gocache v0.0.0-20220703135934-730cffe61cd3/go.mod h1:LR4XDdALyp4JmpCZDxaEvP5AzZ/30zLEa2dVcQPDVgo=

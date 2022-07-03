@@ -1,6 +1,7 @@
 package main
 
 import (
+	cache "github.com/sberglann/uint64gocache"
 	"math"
 	"math/rand"
 	"sync"
@@ -14,6 +15,8 @@ type EvaluatedBoard struct {
 const maxDepth = 5
 const deterministic = true
 const randomRange = 0
+
+var memo = cache.New()
 
 func BestMove(board BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
@@ -95,7 +98,15 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 	if isWhite {
 		best := math.Inf(-1)
 		for _, child := range children {
-			value := minimax(child, depth+1, false, alpha, beta)
+			key := child.Hash()
+			cachedValue, isCached := memo.Get(key)
+			var value float64
+			if isCached {
+				value = cachedValue.(float64)
+			} else {
+				value = minimax(child, depth+1, false, alpha, beta)
+				memo.Set(key, value)
+			}
 			best = math.Max(best, value)
 			alpha = math.Max(alpha, best)
 			if beta <= alpha {
@@ -106,7 +117,15 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 	} else {
 		best := math.Inf(1)
 		for _, child := range children {
-			value := minimax(child, depth+1, true, alpha, beta)
+			key := child.Hash()
+			cachedValue, isCached := memo.Get(key)
+			var value float64
+			if isCached {
+				value = cachedValue.(float64)
+			} else {
+				value = minimax(child, depth+1, true, alpha, beta)
+				memo.Set(key, value)
+			}
 			best = math.Min(best, value)
 			beta = math.Min(beta, best)
 			if beta <= alpha {
