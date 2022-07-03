@@ -25,16 +25,16 @@ var promotionFlags = []int{4, 5, 6, 7}
 var doublePawnMoveFlag = []int{8}
 var enPassantMoveFlag = []int{16}
 
-func BishopMasks(includeEdges bool) map[int]uint64 {
-	var mapping = make(map[int]uint64)
+func BishopMasks(includeEdges bool) [64]uint64 {
+	var mapping [64]uint64
 	for i := 0; i < 64; i++ {
 		mapping[i] = GenerateBishopMask(i, includeEdges)
 	}
 	return mapping
 }
 
-func BishopMagics() map[int]uint64 {
-	var mapping = make(map[int]uint64)
+func BishopMagics() [64]uint64 {
+	var mapping [64]uint64
 	lines, _ := ReadLines("resources/move_tables/magics_bishop.txt")
 	for _, line := range lines {
 		split := strings.Split(line, ";")
@@ -45,8 +45,8 @@ func BishopMagics() map[int]uint64 {
 	return mapping
 }
 
-func BishopBits() map[int]int {
-	var mapping = make(map[int]int)
+func BishopBits() [64]int {
+	var mapping [64]int
 	for i, bits := range BishopBitsArray {
 		mapping[i] = bits
 	}
@@ -66,16 +66,16 @@ func BishopMoveTable() map[MagicKey]uint64 {
 	return mapping
 }
 
-func RookMasks(includeEdges bool) map[int]uint64 {
-	var mapping = make(map[int]uint64)
+func RookMasks(includeEdges bool) [64]uint64 {
+	var mapping [64]uint64
 	for i := 0; i < 64; i++ {
 		mapping[i] = GenerateRookMask(i, includeEdges)
 	}
 	return mapping
 }
 
-func RookMagics() map[int]uint64 {
-	var mapping = make(map[int]uint64)
+func RookMagics() [64]uint64 {
+	var mapping [64]uint64
 	lines, _ := ReadLines("resources/move_tables/magics_rook.txt")
 	for _, line := range lines {
 		split := strings.Split(line, ";")
@@ -86,8 +86,8 @@ func RookMagics() map[int]uint64 {
 	return mapping
 }
 
-func RookBits() map[int]int {
-	var mapping = make(map[int]int)
+func RookBits() [64]int {
+	var mapping [64]int
 	for i, bits := range RookBitsArray {
 		mapping[i] = bits
 	}
@@ -108,62 +108,61 @@ func RookMoveTable() map[MagicKey]uint64 {
 }
 
 // Static moves
-
-func KingMovesMapping() map[int][]Move {
+func KingMovesMapping() [64][]Move {
 	return generateStaticMoves(kingOffsets, 0, 64)
 }
 
-func KnightMovesMapping() map[int][]Move {
+func KnightMovesMapping() [64][]Move {
 	return generateStaticMoves(knightOffsets, 0, 64)
 }
 
-func WhitePawnStraightMovesMapping() map[int][]Move {
+func WhitePawnStraightMovesMapping() [64][]Move {
 	nonPromotingMoves := generateStaticMoves(whitePawnStraightOffsets, 8, 48)
 	promotingMoves := generateStaticMovesWithFlags(whitePawnStraightOffsets, 48, 56, promotionFlags)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 48)
 }
 
-func WhitePawnDoubleMovesMapping() map[int][]Move {
+func WhitePawnDoubleMovesMapping() [64][]Move {
 	return generateStaticMovesWithFlags(whitePawnDoubleOffsets, 8, 16, doublePawnMoveFlag)
 }
 
-func WhitePawnAttackMovesMapping() map[int][]Move {
+func WhitePawnAttackMovesMapping() [64][]Move {
 	nonPromotingMoves := generateStaticMoves(whitePawnAttackOffsets, 8, 48)
 	promotingMoves := generateStaticMovesWithFlags(whitePawnAttackOffsets, 48, 56, promotionFlags)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
-func WhiteEnPassantMovesMapping() map[int][]Move {
+func WhiteEnPassantMovesMapping() [64][]Move {
 	return generateStaticMovesWithFlags(whitePawnAttackOffsets, 32, 40, enPassantMoveFlag)
 }
 
-func BlackPawnDoubleMovesMapping() map[int][]Move {
+func BlackPawnDoubleMovesMapping() [64][]Move {
 	return generateStaticMovesWithFlags(blackPawnDoubleOffsets, 48, 56, doublePawnMoveFlag)
 }
 
-func BlackPawnStraightMovesMapping() map[int][]Move {
+func BlackPawnStraightMovesMapping() [64][]Move {
 	nonPromotingMoves := generateStaticMoves(blackPawnStraightOffsets, 16, 56)
-	promotingMoves := generateStaticMoves(blackPawnStraightOffsets, 8, 16)
+	promotingMoves := generateStaticMovesWithFlags(blackPawnStraightOffsets, 8, 16, promotionFlags)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
-func BlackPawnAttackMovesMapping() map[int][]Move {
+func BlackPawnAttackMovesMapping() [64][]Move {
 	nonPromotingMoves := generateStaticMoves(blackPawnAttackOffsets, 16, 56)
-	promotingMoves := generateStaticMoves(blackPawnAttackOffsets, 8, 16)
+	promotingMoves := generateStaticMovesWithFlags(blackPawnAttackOffsets, 8, 16, promotionFlags)
 	return mergeMoveMaps(nonPromotingMoves, promotingMoves, 8, 56)
 }
 
-func BlackEnPassantMovesMapping() map[int][]Move {
+func BlackEnPassantMovesMapping() [64][]Move {
 	return generateStaticMovesWithFlags(blackPawnAttackOffsets, 24, 32, enPassantMoveFlag)
 }
 
-func generateStaticMoves(offsets [][2]int, from int, to int) map[int][]Move {
+func generateStaticMoves(offsets [][2]int, from int, to int) [64][]Move {
 	standardFlags := []int{0}
 	return generateStaticMovesWithFlags(offsets, from, to, standardFlags)
 }
 
-func generateStaticMovesWithFlags(offsets [][2]int, from int, to int, flags []int) map[int][]Move {
-	moves := make(map[int][]Move)
+func generateStaticMovesWithFlags(offsets [][2]int, from int, to int, flags []int) [64][]Move {
+	var moves [64][]Move
 	var currentMoves []Move
 
 	for origin := from; origin < to; origin++ {
@@ -209,8 +208,8 @@ func PosToBitBoard() map[int]uint64 {
 	return mapping
 }
 
-func mergeMoveMaps(a map[int][]Move, b map[int][]Move, from int, to int) map[int][]Move {
-	merged := make(map[int][]Move)
+func mergeMoveMaps(a [64][]Move, b [64][]Move, from int, to int) [64][]Move {
+	var merged [64][]Move
 	for i := from; i < to; i++ {
 		merged[i] = append(a[i], b[i]...)
 	}
@@ -218,24 +217,24 @@ func mergeMoveMaps(a map[int][]Move, b map[int][]Move, from int, to int) map[int
 }
 
 // Attack masks
-func KnightMasks() map[int]uint64 {
+func KnightMasks() [64]uint64 {
 	return generateMaskMapping(knightOffsets)
 }
 
-func WhitePawnAttackMasks() map[int]uint64 {
+func WhitePawnAttackMasks() [64]uint64 {
 	return generateMaskMapping(whitePawnAttackOffsets)
 }
 
-func BlackPawnAttackMasks() map[int]uint64 {
+func BlackPawnAttackMasks() [64]uint64 {
 	return generateMaskMapping(blackPawnAttackOffsets)
 }
 
-func KingMasks() map[int]uint64 {
+func KingMasks() [64]uint64 {
 	return generateMaskMapping(kingOffsets)
 }
 
-func generateMaskMapping(offsets [][2]int) map[int]uint64 {
-	mapping := make(map[int]uint64)
+func generateMaskMapping(offsets [][2]int) [64]uint64 {
+	var mapping [64]uint64
 	for i := 0; i < 64; i++ {
 		var mask uint64
 		for _, destination := range generateDestinations(i, offsets) {

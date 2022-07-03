@@ -61,7 +61,7 @@ func material(board BitBoard) float64 {
 }
 
 func psq(board BitBoard) float64 {
-	score := func(pieceBoard uint64, psq map[int]float64) float64 {
+	score := func(pieceBoard uint64, psq [64]float64) float64 {
 		var sum float64
 		for pieceBoard > 0 {
 			bit, pb := PopFistBit(pieceBoard)
@@ -99,9 +99,9 @@ func psq(board BitBoard) float64 {
 	}
 }
 
-func extractPsqScores(psq [][]int, earlyGame bool, white bool) map[int]float64 {
+func extractPsqScores(psq [][]int, earlyGame bool, white bool) [64]float64 {
 	// create a map based on psq and use the first element if earlyGame is true
-	psqMap := make(map[int]float64)
+	var psqMapping [64]float64
 	for i, values := range psq {
 		var square int
 		if white {
@@ -113,11 +113,11 @@ func extractPsqScores(psq [][]int, earlyGame bool, white bool) map[int]float64 {
 			square = sq
 		}
 		if earlyGame {
-			psqMap[square] = float64(values[0]) / 100
+			psqMapping[square] = float64(values[0]) / 100
 		} else {
-			psqMap[square] = float64(values[1]) / 100
+			psqMapping[square] = float64(values[1]) / 100
 		}
 	}
 
-	return psqMap
+	return psqMapping
 }
