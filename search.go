@@ -15,8 +15,10 @@ type EvaluatedBoard struct {
 const maxDepth = 5
 const deterministic = true
 const randomRange = 0
+const useCache = false
 
-var memo = cache.New()
+var upperMemo = cache.New()
+var lowerMemo = cache.New()
 
 func BestMove(board BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
@@ -34,7 +36,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			guard <- struct{}{}
 			go func(j int, b BitBoard) {
 				defer wg.Done()
-				eval := minimax(b, 1, false, math.Inf(-1), math.Inf(1))
+				eval := minimax(b, 1, false, -1000.0, 1000.0)
 				evals[j] = EvaluatedBoard{b, eval * randomFactor()}
 				<-guard
 			}(i, b)
@@ -54,7 +56,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			guard <- struct{}{}
 			go func(j int, b BitBoard) {
 				defer wg.Done()
-				eval := minimax(b, 1, true, math.Inf(-1), math.Inf(1))
+				eval := minimax(b, 1, true, -1000.0, 1000.0)
 				evals[j] = EvaluatedBoard{b, eval * randomFactor()}
 				<-guard
 			}(i, b)
@@ -74,74 +76,62 @@ func BestMove(board BitBoard) EvaluatedBoard {
 }
 
 func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float64) float64 {
+	key := board.Hash(depth)
+	if useCache {
+		lowerBound, lowerCached := lowerMemo.Get(key)
+		if lowerCached {
+			if lowerBound.(float64) >= beta {
+				return lowerBound.(float64)
+			}
+			alpha = math.Max(alpha, lowerBound.(float64))
+		}
+		upperBound, upperCached := upperMemo.Get(key)
+		if upperCached {
+			if upperBound.(float64) <= alpha {
+				return upperBound.(float64)
+			}
+			beta = math.Min(beta, upperBound.(float64))
+		}
+	}
+	if depth == maxDepth {
+		return Eval(board)
+	}
 	children := GenerateLegalStates(board)
-	if isWhite {
-		if len(children) <= 0 {
-			return 1000.0
-		} else if depth >= maxDepth {
-			maxEval := -1000.0
-			for _, child := range children {
-				eval := Eval(child)
-				memo.Set(child.Hash(), eval)
-				if eval > maxEval {
-					maxEval = eval
-				}
-			}
-			return maxEval
-		}
-	} else {
-		if len(children) <= 0 {
-			return -1000.0
-		} else if depth >= maxDepth {
-			minEval := 1000.0
-			for _, child := range children {
-				eval := Eval(child)
-				memo.Set(child.Hash(), eval)
-				if eval < minEval {
-					minEval = eval
-				}
-			}
-			return minEval
-		}
-	}
-
-	if isWhite {
-		best := -1000.0
+	var bestEval float64
+	if len(children) == 0 {
+		return Eval(board)
+	} else if isWhite {
+		bestEval = -1000.0
 		for _, child := range children {
-			key := child.Hash()
-			cachedValue, isCached := memo.Get(key)
-			var value float64
-			if isCached {
-				value = cachedValue.(float64)
-			} else {
-				value = minimax(child, depth+1, false, alpha, beta)
-			}
-			best = math.Max(best, value)
-			alpha = math.Max(alpha, best)
+			currentEval := minimax(child, depth+1, false, alpha, beta)
+			bestEval = math.Max(bestEval, currentEval)
+			alpha = math.Max(alpha, bestEval)
 			if beta <= alpha {
 				break
 			}
 		}
-		return best
 	} else {
-		best := math.Inf(1)
+		bestEval = 1000.0
 		for _, child := range children {
-			key := child.Hash()
-			cachedValue, isCached := memo.Get(key)
-			var value float64
-			if isCached {
-				value = cachedValue.(float64)
-			} else {
-				value = minimax(child, depth+1, true, alpha, beta)
-			}
-			best = math.Min(best, value)
-			beta = math.Min(beta, best)
+			currentEval := minimax(child, depth+1, true, alpha, beta)
+			bestEval = math.Min(bestEval, currentEval)
+			beta = math.Min(beta, bestEval)
 			if beta <= alpha {
 				break
 			}
 		}
-		return best
 	}
+	if bestEval <= alpha {
+		upperMemo.Set(key, bestEval)
+	}
+	if bestEval > alpha && bestEval < beta {
+		upperMemo.Set(key, bestEval)
+		lowerMemo.Set(key, bestEval)
+	}
+	if bestEval >= beta {
+		lowerMemo.Set(key, bestEval)
+	}
+	return bestEval
 }
 
 func randomFactor() float64 {

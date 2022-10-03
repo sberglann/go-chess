@@ -45,7 +45,7 @@ var StartBoard = BitBoard{
 	Flags:    uint32(0x000001FE),
 }
 
-func (b BitBoard) Hash() uint64 {
+func (b BitBoard) Hash(depth int) uint64 {
 	combine := func(a uint64, b uint64) uint64 {
 		return a + 0x9e3779b9 + (b << 6) + (a >> 2)
 	}
@@ -68,6 +68,7 @@ func (b BitBoard) Hash() uint64 {
 	h = combine(h, mix(b.RookBB))
 	h = combine(h, mix(b.QueenBB))
 	h = combine(h, mix(b.KingBB))
+	h = combine(h, mix(uint64(depth)))
 	return h
 }
 
