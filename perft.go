@@ -77,24 +77,18 @@ func PerformanceTest() {
 	println("Total time:", totalTime.Milliseconds(), "ms")
 }
 
-func NumMoves(fen string) {
-	board := BoardFromFEN(fen)
-	states1 := GenerateLegalStates(board)
-	states2 := perftStep(states1)
-	println(len(states2) + 1)
-}
-
 func perftStep(previousStates []BitBoard) []BitBoard {
 	var nextStates []BitBoard
 	resetCounters()
 	for _, b := range previousStates {
-		nextStates = append(nextStates, GenerateLegalStates(b)...)
+		states, _ := GenerateLegalStates(b)
+		nextStates = append(nextStates, states[:]...)
 	}
 	return nextStates
 }
 
 func perftStepPar(previousStates []BitBoard) []BitBoard {
-	var nextStates = make([][]BitBoard, len(previousStates))
+	var nextStates = make([][200]BitBoard, len(previousStates))
 
 	maxRoutines := 16
 	guard := make(chan struct{}, maxRoutines)
@@ -106,7 +100,7 @@ func perftStepPar(previousStates []BitBoard) []BitBoard {
 		guard <- struct{}{}
 		go func(j int, b BitBoard) {
 			defer wg.Done()
-			nextStates[j] = GenerateLegalStates(b)
+			nextStates[j], i = GenerateLegalStates(b)
 			<-guard
 		}(i, b)
 	}
@@ -114,7 +108,7 @@ func perftStepPar(previousStates []BitBoard) []BitBoard {
 	wg.Wait()
 	var nextStatesFlat []BitBoard
 	for _, ns := range nextStates {
-		nextStatesFlat = append(nextStatesFlat, ns...)
+		nextStatesFlat = append(nextStatesFlat, ns[:]...)
 	}
 
 	return nextStatesFlat

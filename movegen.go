@@ -41,11 +41,12 @@ var wkCastleMove = Move{bits: uint32(0xC106)}
 var bkCastleMove = Move{bits: uint32(0xCF3E)}
 var bqCastleMove = Move{bits: uint32(0xCF3A)}
 
-func GenerateLegalStates(b BitBoard) []BitBoard {
-	var nextStates []BitBoard
+func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
+	// Theoretically, there is posisble to generate a position where white has 218 legal moves. That will never happen though.
+	var nextStates [200]BitBoard
 	kings := b.KingBB & b.TurnBoard()
 	if kings <= 0 {
-		return nil
+		return [200]BitBoard{}, 0
 	}
 	currentKingPos, _ := PopFistBit(kings)
 
@@ -57,58 +58,99 @@ func GenerateLegalStates(b BitBoard) []BitBoard {
 	kingMoves := kingMoves(b)
 	castlingMoves := castlingMoves(b)
 
-	for _, m := range pawnMoves {
+	i := 0
+	j := 0
+	m := pawnMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, Pawn)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
 		}
+		j++
+		m = pawnMoves[j]
 	}
-	for _, m := range knightMoves {
+
+	j = 0
+	m = knightMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, Knight)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
 		}
+		j++
+		m = knightMoves[j]
 	}
-	for _, m := range bishopMoves {
+	j = 0
+	m = bishopMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, Bishop)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
 		}
+		j++
+		m = bishopMoves[j]
 	}
-	for _, m := range rookMoves {
+	j = 0
+	m = rookMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, Rook)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
 		}
+		j++
+		m = rookMoves[j]
 	}
-	for _, m := range queenMoves {
+	j = 0
+	m = queenMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, Queen)
 		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
 		}
+		j++
+		m = queenMoves[j]
 	}
-	for _, m := range kingMoves {
+	j = 0
+	m = kingMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, King)
 		// Since the king move, we'll have to use the next position when looking for checks.
 		newKingPos := m.Destination()
 		if !isChecked(nextState, newKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
+		}
+		j++
+		if j < len(kingMoves) {
+			m = kingMoves[j]
+		} else {
+			m = Move{0}
 		}
 	}
 
-	for _, m := range castlingMoves {
+	j = 0
+	m = castlingMoves[j]
+	for m.bits > 0 {
 		nextState := transition(b, m, King)
 		newKingPos := m.Destination()
 		if !isChecked(nextState, newKingPos, nextState.Turn()) {
-			nextStates = append(nextStates, nextState)
+			nextStates[i] = nextState
+			i++
+		}
+		j++
+		if j < len(castlingMoves) {
+			m = castlingMoves[j]
+		} else {
+			m = Move{0}
 		}
 	}
 
-	if len(nextStates) == 0 {
-		CheckMateCounter += 1
-	}
-
-	return nextStates
+	return nextStates, i
 }
 
 func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
@@ -325,35 +367,44 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	return res
 }
 
-func kingMoves(bb BitBoard) []Move {
-	var validMoves []Move
+func kingMoves(bb BitBoard) [8]Move {
+	var validMoves [8]Move
 	kings := bb.KingBB & bb.TurnBoard()
+	i := 0
 	for kings > 0 {
 		pos, newKings := PopFistBit(kings)
 		kings = newKings
 		moves := kingMovesMapping[pos]
 		for _, m := range moves {
 			if isNotSelfCapture(bb, m) {
-				validMoves = append(validMoves, m)
+				validMoves[i] = m
+				i++
 			}
 		}
 	}
 	return validMoves
 }
 
-func pawnMoves(bb BitBoard) []Move {
-	var validMoves []Move
+func pawnMoves(bb BitBoard) [32]Move {
+	var validMoves [32]Move
 	pawns := bb.PawnBB & bb.TurnBoard()
+	i := 0
 	for pawns > 0 {
 		pos, newPawns := PopFistBit(pawns)
 		pawns = newPawns
-		validMoves = append(validMoves, pawnMovesFromPos(bb, pos)...)
+		for _, m := range pawnMovesFromPos(bb, pos) {
+			if m.bits > 0 {
+				validMoves[i] = m
+				i++
+			}
+		}
 	}
 	return validMoves
 }
 
-func pawnMovesFromPos(bb BitBoard, origin int) []Move {
-	var validMoves []Move
+func pawnMovesFromPos(bb BitBoard, origin int) [12]Move {
+	// Should never be possible to generate more than 12 pawn moves (including different promotion options in all directions) from one single pos.
+	var validMoves [12]Move
 	var straight, double, attack, enPassant []Move
 
 	if bb.Turn() == White {
@@ -384,73 +435,91 @@ func pawnMovesFromPos(bb BitBoard, origin int) []Move {
 
 	nextSquareIsEmpty := bb.IsEmpty(origin + straightOffset)
 
+	i := 0
 	for _, m := range straight {
 		if nextSquareIsEmpty {
-			validMoves = append(validMoves, m)
+			validMoves[i] = m
+			i++
 		}
 	}
 	for _, m := range double {
 		if nextSquareIsEmpty && bb.IsEmpty(origin+doubleStraightOffset) {
-			validMoves = append(validMoves, m)
+			validMoves[i] = m
+			i++
 		}
 	}
 	for _, m := range attack {
 		if isNotSelfCapture(bb, m) && isCapture(bb, m) {
-			validMoves = append(validMoves, m)
+			validMoves[i] = m
+			i++
 		}
 	}
 	for _, m := range enPassant {
 		if isValidEnPassantCapture(bb, m) {
-			validMoves = append(validMoves, m)
+			validMoves[i] = m
+			i++
 		}
 	}
 
 	return validMoves
 }
 
-func knightMoves(bb BitBoard) []Move {
-	var validMoves []Move
+func knightMoves(bb BitBoard) [32]Move {
+	var validMoves [32]Move
+	i := 0
 	knights := bb.KnightBB & bb.TurnBoard()
 	for knights > 0 {
 		pos, newKnights := PopFistBit(knights)
 		knights = newKnights
-		validMoves = append(validMoves, knightMovesFromPos(bb, pos)...)
-	}
-	return validMoves
-}
-
-func knightMovesFromPos(bb BitBoard, origin int) []Move {
-	var validMoves []Move
-	for _, move := range knightMovesMapping[origin] {
-		if isNotSelfCapture(bb, move) {
-			validMoves = append(validMoves, move)
+		for _, m := range knightMovesFromPos(bb, pos) {
+			if m.bits > 0 {
+				validMoves[i] = m
+				i++
+			}
 		}
 	}
 	return validMoves
 }
 
-func bishopMoves(bb BitBoard) []Move {
-	var validMoves []Move
+func knightMovesFromPos(bb BitBoard, origin int) [8]Move {
+	var validMoves [8]Move
+	i := 0
+	for _, move := range knightMovesMapping[origin] {
+		if isNotSelfCapture(bb, move) {
+			validMoves[i] = move
+			i++
+		}
+	}
+	return validMoves
+}
+
+func bishopMoves(bb BitBoard) [50]Move {
+	var validMoves [50]Move
 	bishops := bb.BishopBB & bb.TurnBoard()
+	i := 0
 	for bishops > 0 {
 		pos, newBishops := PopFistBit(bishops)
 		bishops = newBishops
 		for _, move := range bishopMovesFromPos(bb, pos) {
 			if isNotSelfCapture(bb, move) {
-				validMoves = append(validMoves, move)
+				if move.bits > 0 {
+					validMoves[i] = move
+					i++
+				}
 			}
 		}
 	}
 	return validMoves
 }
 
-func bishopMovesFromPos(bb BitBoard, origin int) []Move {
-	var moves []Move
+func bishopMovesFromPos(bb BitBoard, origin int) [13]Move {
+	var moves [13]Move
 	mask := magicBishopMasks[origin]
 	blockers := mask & (bb.WhiteBB | bb.BlackBB)
 	magic := bishopMagics[origin]
 	key := int((blockers * magic) >> (64 - bishopBits[origin]))
 	legalSquares := bishopMoveTable[MagicKey{Square: origin, Key: key}]
+	i := 0
 	for legalSquares > 0 {
 		destination, newSquares := PopFistBit(legalSquares)
 		legalSquares = newSquares
@@ -459,33 +528,39 @@ func bishopMovesFromPos(bb BitBoard, origin int) []Move {
 		flagBits := uint32(0) << 12
 
 		move := Move{destinationBits | originBits | flagBits}
-		moves = append(moves, move)
+		moves[i] = move
+		i++
 	}
 	return moves
 }
 
-func rookMoves(bb BitBoard) []Move {
-	var validMoves []Move
+func rookMoves(bb BitBoard) [50]Move {
+	var validMoves [50]Move
 	rooks := bb.RookBB & bb.TurnBoard()
+	i := 0
 	for rooks > 0 {
 		pos, newRooks := PopFistBit(rooks)
 		rooks = newRooks
 		for _, move := range rookMovesFromPos(bb, pos) {
 			if isNotSelfCapture(bb, move) {
-				validMoves = append(validMoves, move)
+				if move.bits > 0 {
+					validMoves[i] = move
+					i++
+				}
 			}
 		}
 	}
 	return validMoves
 }
 
-func rookMovesFromPos(bb BitBoard, origin int) []Move {
-	var moves []Move
+func rookMovesFromPos(bb BitBoard, origin int) [14]Move {
+	var moves [14]Move
 	mask := magicRookMasks[origin]
 	blockers := mask & (bb.WhiteBB | bb.BlackBB)
 	magic := rookMagics[origin]
 	key := int((blockers * magic) >> (64 - rookBits[origin]))
 	legalSquares := rookMoveTable[MagicKey{Square: origin, Key: key}]
+	i := 0
 	for legalSquares > 0 {
 		destination, newSquares := PopFistBit(legalSquares)
 		legalSquares = newSquares
@@ -494,29 +569,40 @@ func rookMovesFromPos(bb BitBoard, origin int) []Move {
 		flagBits := uint32(0) << 12
 
 		move := Move{destinationBits | originBits | flagBits}
-		moves = append(moves, move)
+		moves[i] = move
+		i += 1
 	}
 	return moves
 }
 
-func queenMoves(bb BitBoard) []Move {
-	var validMoves []Move
+func queenMoves(bb BitBoard) [100]Move {
+	var validMoves [100]Move
 	queens := bb.QueenBB & bb.TurnBoard()
+	i := 0
 	for queens > 0 {
 		origin, newQueens := PopFistBit(queens)
 		queens = newQueens
 		rook := rookMovesFromPos(bb, origin)
 		bishop := bishopMovesFromPos(bb, origin)
-		for _, move := range append(rook, bishop...) {
+		for _, move := range rook {
 			if isNotSelfCapture(bb, move) {
-				validMoves = append(validMoves, move)
+				if move.bits > 0 {
+					validMoves[i] = move
+					i++
+				}
+			}
+		}
+		for _, move := range bishop {
+			if isNotSelfCapture(bb, move) {
+				validMoves[i] = move
+				i++
 			}
 		}
 	}
 	return validMoves
 }
 
-func castlingMoves(bb BitBoard) []Move {
+func castlingMoves(bb BitBoard) [2]Move {
 	canCastle := func(inBetweenSquares uint64) bool {
 		if (bb.WhiteBB|bb.BlackBB)&inBetweenSquares == 0 {
 			for inBetweenSquares > 0 {
@@ -531,22 +617,27 @@ func castlingMoves(bb BitBoard) []Move {
 			return false
 		}
 	}
-	var validMoves []Move
+	var validMoves [2]Move
+	i := 0
 	if bb.Turn() == White {
 		correctKingPos := bb.KingBB&bb.WhiteBB&posToBitBoard(4) > 0
 		if correctKingPos && bb.WhiteCanCastleKingSite() && canCastle(wkCastleInBetweenMask) {
-			validMoves = append(validMoves, wkCastleMove)
+			validMoves[i] = wkCastleMove
+			i++
 		}
 		if correctKingPos && bb.WhiteCanCastleQueenSite() && canCastle(wqSideCastleInBetweenMask) {
-			validMoves = append(validMoves, wqCastleMove)
+			validMoves[i] = wqCastleMove
+			i++
 		}
 	} else {
 		correctKingPos := bb.KingBB&bb.BlackBB&posToBitBoard(60) > 0
 		if correctKingPos && bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInBetweenMask) {
-			validMoves = append(validMoves, bkCastleMove)
+			validMoves[i] = bkCastleMove
+			i++
 		}
 		if correctKingPos && bb.BlackCanCastleQueenSite() && canCastle(bqSideCastleInBetweenMask) {
-			validMoves = append(validMoves, bqCastleMove)
+			validMoves[i] = bqCastleMove
+			i++
 		}
 	}
 	return validMoves

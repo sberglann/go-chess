@@ -57,7 +57,7 @@ func StartServer() {
 
 			}
 
-			legalMoves := GenerateLegalStates(nextMove)
+			legalMoves, _ := GenerateLegalStates(nextMove)
 
 			for _, move := range legalMoves {
 				lmr := extractLegalMoveResponse(nextMove, move)

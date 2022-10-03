@@ -50,25 +50,15 @@ func (b BitBoard) Hash(depth int) uint64 {
 		return a + 0x9e3779b9 + (b << 6) + (a >> 2)
 	}
 
-	mix := func(x uint64) uint64 {
-		//https: //en.wikipedia.org/wiki/MurmurHash
-		x ^= x >> 33
-		x *= 0xff51afd7ed558ccd
-		x ^= x >> 33
-		x *= 0xc4ceb9fe1a85ec53
-		x ^= x >> 33
-		return x
-	}
-
-	h := mix(b.WhiteBB)
-	h = combine(h, mix(b.BlackBB))
-	h = combine(h, mix(b.PawnBB))
-	h = combine(h, mix(b.KnightBB))
-	h = combine(h, mix(b.BishopBB))
-	h = combine(h, mix(b.RookBB))
-	h = combine(h, mix(b.QueenBB))
-	h = combine(h, mix(b.KingBB))
-	h = combine(h, mix(uint64(depth)))
+	h := MurmurHash(b.WhiteBB)
+	h = combine(h, MurmurHash(b.BlackBB))
+	h = combine(h, MurmurHash(b.PawnBB))
+	h = combine(h, MurmurHash(b.KnightBB))
+	h = combine(h, MurmurHash(b.BishopBB))
+	h = combine(h, MurmurHash(b.RookBB))
+	h = combine(h, MurmurHash(b.QueenBB))
+	h = combine(h, MurmurHash(b.KingBB))
+	h = combine(h, MurmurHash(uint64(depth)))
 	return h
 }
 
@@ -93,10 +83,10 @@ func (b BitBoard) OppositeTurnBoard() uint64 {
 }
 
 func (b BitBoard) Turn() Color {
-	if BitAt32(b.Flags, 0) == 0 {
-		return White
-	} else {
+	if BitAt32(b.Flags, 0) {
 		return Black
+	} else {
+		return White
 	}
 }
 
@@ -142,7 +132,7 @@ func (b BitBoard) IsEmpty(pos int) bool {
 
 func (b BitBoard) PieceAt(pos int) ColoredPiece {
 	isPopulated := func(bb uint64, pos int) bool {
-		return BitAt64(bb, pos) == 1
+		return (bb & (uint64(1) << pos)) > 0
 	}
 	var color Color
 	var piece Piece
@@ -224,7 +214,7 @@ func (b BitBoard) DebugBoard() string {
 
 	result += "Flags\n"
 	for i := 0; i < 32; i++ {
-		if BitAt32(b.Flags, i) == 1 {
+		if BitAt32(b.Flags, i) {
 			result += "1"
 		} else {
 			result += "0"
@@ -267,16 +257,16 @@ func (b BitBoard) ToFEN() string {
 	activeColor := b.Turn().Letter()
 
 	var castlingRightLetters []string
-	if BitAt32(b.Flags, 6) == 1 {
+	if BitAt32(b.Flags, 6) {
 		castlingRightLetters = append(castlingRightLetters, "K")
 	}
-	if BitAt32(b.Flags, 7) == 1 {
+	if BitAt32(b.Flags, 7) {
 		castlingRightLetters = append(castlingRightLetters, "Q")
 	}
-	if BitAt32(b.Flags, 8) == 1 {
+	if BitAt32(b.Flags, 8) {
 		castlingRightLetters = append(castlingRightLetters, "k")
 	}
-	if BitAt32(b.Flags, 9) == 1 {
+	if BitAt32(b.Flags, 9) {
 		castlingRightLetters = append(castlingRightLetters, "q")
 	}
 
