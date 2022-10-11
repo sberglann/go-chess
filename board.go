@@ -31,6 +31,8 @@ type BitBoard struct {
 	// Bit 10-16: The count since the last piece capture or pawn move. if this counter passes 100, the game is draw.
 	// Bit 17-24: The move counter. Incremented after black has moved.
 	Flags uint32
+
+	Eval float64
 }
 
 var StartBoard = BitBoard{
@@ -43,6 +45,7 @@ var StartBoard = BitBoard{
 	QueenBB:  uint64(0x0800000000000008),
 	KingBB:   uint64(0x1000000000000010),
 	Flags:    uint32(0x000001FE),
+	Eval:     0.0,
 }
 
 func (b BitBoard) Hash(depth int) uint64 {

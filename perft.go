@@ -77,16 +77,6 @@ func PerformanceTest() {
 	println("Total time:", totalTime.Milliseconds(), "ms")
 }
 
-func perftStep(previousStates []BitBoard) []BitBoard {
-	var nextStates []BitBoard
-	resetCounters()
-	for _, b := range previousStates {
-		states, _ := GenerateLegalStates(b)
-		nextStates = append(nextStates, states[:]...)
-	}
-	return nextStates
-}
-
 func perftStepPar(previousStates []BitBoard) []BitBoard {
 	var nextStates = make([][200]BitBoard, len(previousStates))
 
@@ -100,7 +90,14 @@ func perftStepPar(previousStates []BitBoard) []BitBoard {
 		guard <- struct{}{}
 		go func(j int, b BitBoard) {
 			defer wg.Done()
-			nextStates[j], i = GenerateLegalStates(b)
+			nextMoves, _ := GenerateLegalMoves(b)
+			var states [200]BitBoard
+			for i, m := range nextMoves {
+				if m.bits > 0 {
+					states[i] = transition(b, m)
+				}
+			}
+			nextStates[j] = states
 			<-guard
 		}(i, b)
 	}

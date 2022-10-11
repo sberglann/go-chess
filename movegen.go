@@ -41,15 +41,8 @@ var wkCastleMove = Move{bits: uint32(0xC106)}
 var bkCastleMove = Move{bits: uint32(0xCF3E)}
 var bqCastleMove = Move{bits: uint32(0xCF3A)}
 
-func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
-	// Theoretically, there is posisble to generate a position where white has 218 legal moves. That will never happen though.
-	var nextStates [200]BitBoard
-	kings := b.KingBB & b.TurnBoard()
-	if kings <= 0 {
-		return [200]BitBoard{}, 0
-	}
-	currentKingPos, _ := PopFistBit(kings)
-
+func GenerateLegalMoves(b BitBoard) ([200]Move, int) {
+	var nextStates [200]Move
 	pawnMoves := pawnMoves(b)
 	knightMoves := knightMoves(b)
 	bishopMoves := bishopMoves(b)
@@ -62,69 +55,47 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j := 0
 	m := pawnMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Pawn)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
+		i++
 		j++
 		m = pawnMoves[j]
 	}
-
 	j = 0
 	m = knightMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Knight)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
+		i++
 		j++
 		m = knightMoves[j]
 	}
 	j = 0
 	m = bishopMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Bishop)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
+		i++
 		j++
 		m = bishopMoves[j]
 	}
 	j = 0
 	m = rookMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Rook)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
+		i++
 		j++
 		m = rookMoves[j]
 	}
 	j = 0
 	m = queenMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Queen)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
+		i++
 		j++
 		m = queenMoves[j]
 	}
 	j = 0
 	m = kingMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, King)
-		// Since the king move, we'll have to use the next position when looking for checks.
-		newKingPos := m.Destination()
-		if !isChecked(nextState, newKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
 		j++
 		if j < len(kingMoves) {
 			m = kingMoves[j]
@@ -136,12 +107,8 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = castlingMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, King)
-		newKingPos := m.Destination()
-		if !isChecked(nextState, newKingPos, nextState.Turn()) {
-			nextStates[i] = nextState
-			i++
-		}
+		nextStates[i] = m
+		i++
 		j++
 		if j < len(castlingMoves) {
 			m = castlingMoves[j]
@@ -201,10 +168,11 @@ func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
 	return isCheckByKnight
 }
 
-func transition(b BitBoard, m Move, piece Piece) BitBoard {
+func transition(b BitBoard, m Move) BitBoard {
 	var capturedPiece Piece
 	var enPassantFile int
 
+	piece := b.PieceAt(m.Origin())
 	origin := m.Origin()
 	destination := m.Destination()
 	originBB := posToBitBoard(origin)
@@ -243,7 +211,7 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	}
 
 	moveOrPass := func(currentPiece Piece, pieceBB uint64) uint64 {
-		if piece == currentPiece {
+		if piece.piece == currentPiece {
 			return makeMove(pieceBB)
 		} else if capturedPiece == currentPiece {
 			return pieceBB &^ destinationBB
@@ -352,6 +320,8 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	queenBB = moveOrPass(Queen, queenBB)
 	kingBB = moveOrPass(King, kingBB)
 
+	eval := Eval(b, m)
+
 	res := BitBoard{
 		WhiteBB:  whiteBB,
 		BlackBB:  blackBB,
@@ -362,6 +332,7 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 		QueenBB:  queenBB,
 		KingBB:   kingBB,
 		Flags:    flags,
+		Eval:     eval,
 	}
 
 	return res

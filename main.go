@@ -1,6 +1,6 @@
 package main
 
 func main() {
-	//StartServer()
-	PerformanceTest()
+	StartServer()
+	//PerformanceTest()
 }

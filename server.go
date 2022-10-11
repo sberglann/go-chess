@@ -57,11 +57,13 @@ func StartServer() {
 
 			}
 
-			legalMoves, _ := GenerateLegalStates(nextMove)
+			legalMoves, _ := GenerateLegalMoves(nextMove)
 
 			for _, move := range legalMoves {
-				lmr := extractLegalMoveResponse(nextMove, move)
-				legalStates = append(legalStates, lmr)
+				if move.bits > 0 {
+					lmr := extractLegalMoveResponse(nextMove, transition(nextMove, move))
+					legalStates = append(legalStates, lmr)
+				}
 			}
 			response := &MoveResponse{nextMove.ToFEN(), legalStates, eval}
 			message, err := json.Marshal(response)

@@ -1,14 +1,7 @@
 package main
 
-import (
-	"math/bits"
-)
-
-func Eval(board BitBoard) float64 {
-	p := psq(board) / 100
-	m := material(board)
-	score := p + m
-	return score
+func Eval(board BitBoard, move Move) float64 {
+	return board.Eval + (psq(board, move) / 100.0)
 }
 
 const (
@@ -17,107 +10,74 @@ const (
 	bishopWeight = 3.0
 	rookWeight   = 5.0
 	queenWeight  = 9.0
-	kingWeight   = 100.0
+	kingWeight   = 20.0
 )
 
-var (
-	PsqPawnWhiteEarly   = extractPsqScores(psqPawn, true, true)
-	PsqPawnWhiteLate    = extractPsqScores(psqPawn, false, true)
-	PsqPawnBlackEarly   = extractPsqScores(psqPawn, true, false)
-	PsqPawnBlackLate    = extractPsqScores(psqPawn, false, false)
-	PsqKnightWhiteEarly = extractPsqScores(psqKnight, true, true)
-	PsqKnightWhiteLate  = extractPsqScores(psqKnight, false, true)
-	PsqKnightBlackEarly = extractPsqScores(psqKnight, true, false)
-	PsqKnightBlackLate  = extractPsqScores(psqKnight, false, false)
-	PsqBishopWhiteEarly = extractPsqScores(psqBishop, true, true)
-	PsqBishopWhiteLate  = extractPsqScores(psqBishop, false, true)
-	PsqBishopBlackEarly = extractPsqScores(psqBishop, true, false)
-	PsqBishopBlackLate  = extractPsqScores(psqBishop, false, false)
-	PsqRookWhiteEarly   = extractPsqScores(psqRook, true, true)
-	PsqRookWhiteLate    = extractPsqScores(psqRook, false, true)
-	PsqRookBlackEarly   = extractPsqScores(psqRook, true, false)
-	PsqRookBlackLate    = extractPsqScores(psqRook, false, false)
-	PsqQueenWhiteEarly  = extractPsqScores(psqQueen, true, true)
-	PsqQueenWhiteLate   = extractPsqScores(psqQueen, false, true)
-	PsqQueenBlackEarly  = extractPsqScores(psqQueen, true, false)
-	PsqQueenBlackLate   = extractPsqScores(psqQueen, false, false)
-	PsqKingWhiteEarly   = extractPsqScores(psqKing, true, true)
-	PsqKingWhiteLate    = extractPsqScores(psqKing, false, true)
-	PsqKingBlackLate    = extractPsqScores(psqKing, false, false)
-	PsqKingBlackEarly   = extractPsqScores(psqKing, true, false)
-)
-
-func material(board BitBoard) float64 {
-	return float64(bits.OnesCount64(board.WhiteBB&board.PawnBB))*pawnWeight +
-		float64(bits.OnesCount64(board.WhiteBB&board.KnightBB))*knightWeigh +
-		float64(bits.OnesCount64(board.WhiteBB&board.BishopBB))*bishopWeight +
-		float64(bits.OnesCount64(board.WhiteBB&board.RookBB))*rookWeight +
-		float64(bits.OnesCount64(board.WhiteBB&board.QueenBB))*queenWeight -
-		float64(bits.OnesCount64(board.BlackBB&board.PawnBB))*pawnWeight -
-		float64(bits.OnesCount64(board.BlackBB&board.KnightBB))*knightWeigh -
-		float64(bits.OnesCount64(board.BlackBB&board.BishopBB))*bishopWeight -
-		float64(bits.OnesCount64(board.BlackBB&board.RookBB))*rookWeight -
-		float64(bits.OnesCount64(board.BlackBB&board.QueenBB))*queenWeight
+var psqScores = map[ColoredPiece][128]float64{
+	ColoredPiece{Pawn, White}:   extractPsqScores(psqPawn, true, pawnWeight*100.0),
+	ColoredPiece{Pawn, Black}:   extractPsqScores(psqPawn, false, pawnWeight*100.0),
+	ColoredPiece{Knight, White}: extractPsqScores(psqKnight, true, knightWeigh*100.0),
+	ColoredPiece{Knight, Black}: extractPsqScores(psqKnight, false, knightWeigh*100.0),
+	ColoredPiece{Bishop, White}: extractPsqScores(psqBishop, true, bishopWeight*100.0),
+	ColoredPiece{Bishop, Black}: extractPsqScores(psqBishop, false, bishopWeight*100.0),
+	ColoredPiece{Rook, White}:   extractPsqScores(psqRook, true, rookWeight*100.0),
+	ColoredPiece{Rook, Black}:   extractPsqScores(psqRook, false, rookWeight*100.0),
+	ColoredPiece{Queen, White}:  extractPsqScores(psqQueen, true, queenWeight*100.0),
+	ColoredPiece{Queen, Black}:  extractPsqScores(psqQueen, false, queenWeight*100.0),
+	ColoredPiece{King, White}:   extractPsqScores(psqKing, true, kingWeight*100.0),
+	ColoredPiece{King, Black}:   extractPsqScores(psqKing, false, kingWeight*100.0),
 }
 
-func psq(board BitBoard) float64 {
-	score := func(pieceBoard uint64, psq [64]float64) float64 {
-		var sum float64
-		for pieceBoard > 0 {
-			bit, pb := PopFistBit(pieceBoard)
-			pieceBoard = pb
-			sum += psq[bit]
-		}
-		return sum
+func psq(board BitBoard, move Move) float64 {
+	// In the end game we would like to use other psq tables, which are appended to the early game psq tables
+	scoreOffset := 0
+	if board.TurnCount() > 40 {
+		scoreOffset = 64
 	}
-	if board.TurnCount() <= 40 {
-		return score(board.WhiteBB&board.PawnBB, PsqPawnWhiteEarly) +
-			score(board.WhiteBB&board.KnightBB, PsqKnightWhiteEarly) +
-			score(board.WhiteBB&board.BishopBB, PsqBishopWhiteEarly) +
-			score(board.WhiteBB&board.RookBB, PsqRookWhiteEarly) +
-			score(board.WhiteBB&board.QueenBB, PsqQueenWhiteEarly) +
-			score(board.WhiteBB&board.KingBB, PsqKingWhiteEarly) -
-			score(board.BlackBB&board.PawnBB, PsqPawnBlackEarly) -
-			score(board.BlackBB&board.KnightBB, PsqKnightBlackEarly) -
-			score(board.BlackBB&board.BishopBB, PsqBishopBlackEarly) -
-			score(board.BlackBB&board.RookBB, PsqRookBlackEarly) -
-			score(board.BlackBB&board.QueenBB, PsqQueenBlackEarly) -
-			score(board.BlackBB&board.KingBB, PsqKingBlackEarly)
-	} else {
-		return score(board.WhiteBB&board.PawnBB, PsqPawnWhiteLate) +
-			score(board.WhiteBB&board.KnightBB, PsqKnightWhiteLate) +
-			score(board.WhiteBB&board.BishopBB, PsqBishopWhiteLate) +
-			score(board.WhiteBB&board.RookBB, PsqRookWhiteLate) +
-			score(board.WhiteBB&board.QueenBB, PsqQueenWhiteLate) +
-			score(board.WhiteBB&board.KingBB, PsqKingWhiteLate) -
-			score(board.BlackBB&board.PawnBB, PsqPawnBlackLate) -
-			score(board.BlackBB&board.KnightBB, PsqKnightBlackLate) -
-			score(board.BlackBB&board.BishopBB, PsqBishopBlackLate) -
-			score(board.BlackBB&board.RookBB, PsqRookBlackLate) -
-			score(board.BlackBB&board.QueenBB, PsqQueenBlackLate) -
-			score(board.BlackBB&board.KingBB, PsqKingBlackLate)
+
+	origin := move.Origin()
+	destination := move.Destination()
+	originPiece := board.PieceAt(origin)
+	capturedPiece := board.PieceAt(move.Destination())
+
+	captureScore := 0.0
+	if capturedPiece.piece != Empty {
+		captureScore = psqScores[capturedPiece][destination+scoreOffset]
 	}
+
+	return psqScores[originPiece][destination+scoreOffset] - psqScores[originPiece][origin+scoreOffset] - captureScore
 }
 
-func extractPsqScores(psq [][]int, earlyGame bool, white bool) [64]float64 {
+func extractPsqScores(psq [][]int, white bool, pieceValue float64) [128]float64 {
 	// create a map based on psq and use the first element if earlyGame is true
-	var psqMapping [64]float64
-	for i, values := range psq {
-		var square int
-		if white {
-			square = i
-		} else {
-			rank := i / 8
-			file := i % 8
-			sq := (8-rank)*8 - (8 - file)
-			square = sq
-		}
-		if earlyGame {
-			psqMapping[square] = float64(values[0]) / 100
-		} else {
-			psqMapping[square] = float64(values[1]) / 100
+	var psqMapping [128]float64
+	var scoreMultiplier float64
+	if white {
+		scoreMultiplier = 1.0
+	} else {
+		scoreMultiplier = -1.0
+	}
+	addPsqScores := func(earlyGame bool) {
+		for i, values := range psq {
+			var square int
+			if white {
+				square = i
+			} else {
+				rank := i / 8
+				file := i % 8
+				sq := (8-rank)*8 - (8 - file)
+				square = sq
+			}
+			if earlyGame {
+				psqMapping[square] = scoreMultiplier * (pieceValue + float64(values[0])/100)
+			} else {
+				psqMapping[square+64] = scoreMultiplier * (pieceValue + float64(values[1])/100)
+			}
 		}
 	}
+
+	addPsqScores(true)
+	addPsqScores(false)
 
 	return psqMapping
 }
