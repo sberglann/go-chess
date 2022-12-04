@@ -1,4 +1,4 @@
-package main
+package gochess
 
 import (
 	"flag"
@@ -68,7 +68,7 @@ func PerformanceTest() {
 	for i, position := range positions {
 		moveStart := time.Now()
 		board := BoardFromFEN(position)
-		BestMove(board)
+		EvaluatedMoves(board, SearchConfig{MaxDepth: 4, Randomness: 0.0, Parallelism: 16})
 
 		moveElapsed := time.Since(moveStart)
 		println("Position", i, "took", moveElapsed.Milliseconds(), "ms")

@@ -1,7 +1,6 @@
-package main
+package gochess
 
 import (
-	"math"
 	"strconv"
 	"strings"
 )
@@ -197,15 +196,6 @@ func generateDestinations(i int, offsets [][2]int) []int {
 	}
 
 	return indices
-}
-
-// Creates a mapping from index to the uint64 one-hot representation of the number.
-func PosToBitBoard() map[int]uint64 {
-	var mapping = make(map[int]uint64)
-	for i := 0; i < 64; i++ {
-		mapping[i] = uint64(math.Pow(2, float64(i)))
-	}
-	return mapping
 }
 
 func mergeMoveMaps(a [64][]Move, b [64][]Move, from int, to int) [64][]Move {

@@ -1,4 +1,4 @@
-package main
+package gochess
 
 // Magics
 var bishopMasksWithEdges = BishopMasks(true)
@@ -31,10 +31,10 @@ var whitePawnAttackMasks = WhitePawnAttackMasks()
 var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 // Castling empty square checks
-var wqSideCastleInBetweenMask = posToBitBoard(1) | posToBitBoard(2) | posToBitBoard(3)
-var wkCastleInBetweenMask = posToBitBoard(5) | posToBitBoard(6)
-var bqSideCastleInBetweenMask = posToBitBoard(57) | posToBitBoard(58) | posToBitBoard(59)
-var bkSideCastleInBetweenMask = posToBitBoard(61) | posToBitBoard(62)
+var wqSideCastleInBetweenMask = PosToBitBoard(1) | PosToBitBoard(2) | PosToBitBoard(3)
+var wkCastleInBetweenMask = PosToBitBoard(5) | PosToBitBoard(6)
+var bqSideCastleInBetweenMask = PosToBitBoard(57) | PosToBitBoard(58) | PosToBitBoard(59)
+var bkSideCastleInBetweenMask = PosToBitBoard(61) | PosToBitBoard(62)
 
 var wqCastleMove = Move{bits: uint32(0xC102)}
 var wkCastleMove = Move{bits: uint32(0xC106)}
@@ -207,8 +207,8 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 
 	origin := m.Origin()
 	destination := m.Destination()
-	originBB := posToBitBoard(origin)
-	destinationBB := posToBitBoard(destination)
+	originBB := PosToBitBoard(origin)
+	destinationBB := PosToBitBoard(destination)
 	if m.IsEnPassantMove() {
 		enPassantFile = (m.Destination() % 8) + 1
 	} else {
@@ -276,11 +276,11 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 
 	if enPassantFile > 0 {
 		if b.Turn() == White {
-			whiteBB = (b.WhiteBB | posToBitBoard(40+enPassantFile-1)) &^ originBB
-			blackBB = b.BlackBB &^ posToBitBoard(32+enPassantFile-1)
+			whiteBB = (b.WhiteBB | PosToBitBoard(40+enPassantFile-1)) &^ originBB
+			blackBB = b.BlackBB &^ PosToBitBoard(32+enPassantFile-1)
 		} else {
-			blackBB = (b.BlackBB | posToBitBoard(16+enPassantFile-1)) &^ originBB
-			whiteBB = b.WhiteBB &^ posToBitBoard(24+enPassantFile-1)
+			blackBB = (b.BlackBB | PosToBitBoard(16+enPassantFile-1)) &^ originBB
+			whiteBB = b.WhiteBB &^ PosToBitBoard(24+enPassantFile-1)
 		}
 	} else {
 		if b.Turn() == White {
@@ -294,9 +294,9 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 
 	if enPassantFile > 0 {
 		if b.Turn() == White {
-			pawnBB = b.PawnBB | posToBitBoard(40+enPassantFile-1)&^originBB&^posToBitBoard(32+enPassantFile-1)
+			pawnBB = b.PawnBB | PosToBitBoard(40+enPassantFile-1)&^originBB&^PosToBitBoard(32+enPassantFile-1)
 		} else {
-			pawnBB = b.PawnBB | posToBitBoard(16+enPassantFile-1)&^originBB&^posToBitBoard(24+enPassantFile-1)
+			pawnBB = b.PawnBB | PosToBitBoard(16+enPassantFile-1)&^originBB&^PosToBitBoard(24+enPassantFile-1)
 		}
 	} else {
 		pawnBB = moveOrPass(Pawn, b.PawnBB)
@@ -305,31 +305,31 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	if m.IsCastleMove() {
 		if m.Destination() == 2 {
 			// White queen side.
-			rookBB &^= posToBitBoard(0)
-			rookBB |= posToBitBoard(3)
-			whiteBB &^= posToBitBoard(0)
-			whiteBB |= posToBitBoard(3)
+			rookBB &^= PosToBitBoard(0)
+			rookBB |= PosToBitBoard(3)
+			whiteBB &^= PosToBitBoard(0)
+			whiteBB |= PosToBitBoard(3)
 			flags &^= uint32(0x60)
 		} else if m.Destination() == 6 {
 			// White king side
-			rookBB &^= posToBitBoard(7)
-			rookBB |= posToBitBoard(5)
-			whiteBB &^= posToBitBoard(7)
-			whiteBB |= posToBitBoard(5)
+			rookBB &^= PosToBitBoard(7)
+			rookBB |= PosToBitBoard(5)
+			whiteBB &^= PosToBitBoard(7)
+			whiteBB |= PosToBitBoard(5)
 			flags &^= uint32(0x60)
 		} else if m.Destination() == 58 {
 			// Black queen side
-			rookBB &^= posToBitBoard(56)
-			rookBB |= posToBitBoard(59)
-			blackBB &^= posToBitBoard(56)
-			blackBB |= posToBitBoard(59)
+			rookBB &^= PosToBitBoard(56)
+			rookBB |= PosToBitBoard(59)
+			blackBB &^= PosToBitBoard(56)
+			blackBB |= PosToBitBoard(59)
 			flags &^= uint32(0x180)
 		} else {
 			// Black king side
-			rookBB &^= posToBitBoard(63)
-			rookBB |= posToBitBoard(61)
-			blackBB &^= posToBitBoard(63)
-			blackBB |= posToBitBoard(61)
+			rookBB &^= PosToBitBoard(63)
+			rookBB |= PosToBitBoard(61)
+			blackBB &^= PosToBitBoard(63)
+			blackBB |= PosToBitBoard(61)
 			flags &^= uint32(0x180)
 		}
 	}
@@ -620,7 +620,7 @@ func castlingMoves(bb BitBoard) [2]Move {
 	var validMoves [2]Move
 	i := 0
 	if bb.Turn() == White {
-		correctKingPos := bb.KingBB&bb.WhiteBB&posToBitBoard(4) > 0
+		correctKingPos := bb.KingBB&bb.WhiteBB&PosToBitBoard(4) > 0
 		if correctKingPos && bb.WhiteCanCastleKingSite() && canCastle(wkCastleInBetweenMask) {
 			validMoves[i] = wkCastleMove
 			i++
@@ -630,7 +630,7 @@ func castlingMoves(bb BitBoard) [2]Move {
 			i++
 		}
 	} else {
-		correctKingPos := bb.KingBB&bb.BlackBB&posToBitBoard(60) > 0
+		correctKingPos := bb.KingBB&bb.BlackBB&PosToBitBoard(60) > 0
 		if correctKingPos && bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInBetweenMask) {
 			validMoves[i] = bkCastleMove
 			i++
@@ -644,11 +644,11 @@ func castlingMoves(bb BitBoard) [2]Move {
 }
 
 func isNotSelfCapture(bb BitBoard, m Move) bool {
-	return bb.TurnBoard()&posToBitBoard(m.Destination()) == 0
+	return bb.TurnBoard()&PosToBitBoard(m.Destination()) == 0
 }
 
 func isCapture(bb BitBoard, m Move) bool {
-	return bb.OppositeTurnBoard()&posToBitBoard(m.Destination()) > 0
+	return bb.OppositeTurnBoard()&PosToBitBoard(m.Destination()) > 0
 }
 
 func isValidEnPassantCapture(bb BitBoard, m Move) bool {

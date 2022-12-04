@@ -1,37 +1,39 @@
-package main
+package gochess
 
 import (
-	cache "github.com/sberglann/uint64gocache"
 	"math"
 	"math/rand"
 	"sync"
 )
 
 type EvaluatedBoard struct {
-	board BitBoard
-	eval  float64
+	Board BitBoard
+	Eval  float64
 }
 
-const maxDepth = 4
-const deterministic = true
-const randomRange = 0
-const useCache = false
+type SearchConfig struct {
+	MaxDepth    int
+	Randomness  float64
+	Parallelism int
+}
 
-var upperMemo = cache.New()
-var lowerMemo = cache.New()
+var maxDepth int
+var randomness float64
+var parallelism int
 
-func BestMove(board BitBoard) EvaluatedBoard {
-	var bestMove BitBoard
-	var bestEval float64
+func EvaluatedMoves(board BitBoard, config SearchConfig) []EvaluatedBoard {
+	maxDepth = config.MaxDepth
+	randomness = config.Randomness
+	parallelism = config.Parallelism
 
 	legalMoves, numMoves := GenerateLegalStates(board)
-	maxRoutines := 16
-	guard := make(chan struct{}, maxRoutines)
+	guard := make(chan struct{}, parallelism)
 	var evals = make([]EvaluatedBoard, numMoves)
 	var wg sync.WaitGroup
 	wg.Add(numMoves)
+	turn := board.Turn()
 
-	if board.Turn() == White {
+	if turn == White {
 		for i := 0; i < numMoves; i++ {
 			guard <- struct{}{}
 			go func(j int, b BitBoard) {
@@ -41,16 +43,6 @@ func BestMove(board BitBoard) EvaluatedBoard {
 				<-guard
 			}(i, legalMoves[i])
 		}
-		wg.Wait()
-		maxEval := -1000.0
-		for _, evaledBoard := range evals {
-			if evaledBoard.eval > maxEval {
-				maxEval = evaledBoard.eval
-				bestEval = maxEval
-				bestMove = evaledBoard.board
-			}
-		}
-
 	} else {
 		for i := 0; i < numMoves; i++ {
 			guard <- struct{}{}
@@ -62,16 +54,31 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			}(i, legalMoves[i])
 		}
 		wg.Wait()
-		minEval := 1000.0
-		for _, evaledBoard := range evals {
-			if evaledBoard.eval < minEval {
-				minEval = evaledBoard.eval
-				bestEval = minEval
-				bestMove = evaledBoard.board
+	}
+
+	return evals
+}
+
+func SelectBest(turn Color, boards []EvaluatedBoard) EvaluatedBoard {
+	var bestMove BitBoard
+	var bestEval float64
+	if turn == White {
+		bestEval = -1000.0
+		for _, evaledBoard := range boards {
+			if evaledBoard.Eval > bestEval {
+				bestEval = evaledBoard.Eval
+				bestMove = evaledBoard.Board
+			}
+		}
+	} else {
+		bestEval = 1000.0
+		for _, evaledBoard := range boards {
+			if evaledBoard.Eval < bestEval {
+				bestEval = evaledBoard.Eval
+				bestMove = evaledBoard.Board
 			}
 		}
 	}
-
 	return EvaluatedBoard{bestMove, bestEval}
 }
 
@@ -116,9 +123,9 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 }
 
 func randomFactor() float64 {
-	if deterministic {
+	if randomness == 0.0 {
 		return 1.0
 	} else {
-		return (1.0 - randomRange) + rand.Float64()*randomRange
+		return (1.0 - randomness) + rand.Float64()*randomness
 	}
 }

@@ -1,4 +1,4 @@
-package main
+package gochess
 
 var FileToLetter = map[int]string{
 	1: "a",

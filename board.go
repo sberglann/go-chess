@@ -1,4 +1,4 @@
-package main
+package gochess
 
 import (
 	"fmt"
@@ -124,7 +124,7 @@ func (b BitBoard) BlackCanCastleQueenSite() bool {
 
 func (b BitBoard) IsEmpty(pos int) bool {
 	if pos > 0 {
-		return posToBitBoard(pos)&(b.WhiteBB|b.BlackBB) == 0
+		return PosToBitBoard(pos)&(b.WhiteBB|b.BlackBB) == 0
 	} else {
 		return true
 	}
@@ -307,11 +307,9 @@ func (b BitBoard) ToFEN() string {
 	return strings.Join(values, " ")
 }
 
-func posToBitBoard(i int) uint64 {
+func PosToBitBoard(i int) uint64 {
 	return uint64(1) << i
 }
-
-var posToBitBoardLol = PosToBitBoard()
 
 func IndexToCartesian(pos int) (int, int) {
 	rank := pos/8 + 1

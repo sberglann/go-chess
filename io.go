@@ -1,9 +1,9 @@
-package main
+package gochess
 
 import (
-	"bufio"
 	"log"
 	"os"
+	"strings"
 )
 
 func AppendToFile(path string, content string) {
@@ -27,16 +27,13 @@ func DeleteFile(path string) {
 }
 
 func ReadLines(path string) ([]string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
+	data, err := Asset(path)
+	content := string(data)
 	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	for _, line := range strings.Split(content, "\n") {
+		if line != "" {
+			lines = append(lines, strings.TrimSpace(line))
+		}
 	}
-	return lines, scanner.Err()
+	return lines, err
 }

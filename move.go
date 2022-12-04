@@ -1,4 +1,4 @@
-package main
+package gochess
 
 type Move struct {
 	// Bit   0-5: destination square [0, 63]
