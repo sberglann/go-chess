@@ -31,10 +31,10 @@ var whitePawnAttackMasks = WhitePawnAttackMasks()
 var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 // Castling empty square checks
-var wqSideCastleInBetweenMask = posToBitBoard(1) | posToBitBoard(2) | posToBitBoard(3)
-var wkCastleInBetweenMask = posToBitBoard(5) | posToBitBoard(6)
-var bqSideCastleInBetweenMask = posToBitBoard(57) | posToBitBoard(58) | posToBitBoard(59)
-var bkSideCastleInBetweenMask = posToBitBoard(61) | posToBitBoard(62)
+var wqSideCastleInMask = posToBitBoard(1) | posToBitBoard(2) | posToBitBoard(3) | posToBitBoard(4)
+var wkCastleInMask = posToBitBoard(4) | posToBitBoard(5) | posToBitBoard(6)
+var bqSideCastleInMask = posToBitBoard(57) | posToBitBoard(58) | posToBitBoard(59) | posToBitBoard(60)
+var bkSideCastleInMask = posToBitBoard(60) |posToBitBoard(61) | posToBitBoard(62)
 
 var wqCastleMove = Move{bits: uint32(0xC102)}
 var wkCastleMove = Move{bits: uint32(0xC106)}
@@ -621,21 +621,21 @@ func castlingMoves(bb BitBoard) [2]Move {
 	i := 0
 	if bb.Turn() == White {
 		correctKingPos := bb.KingBB&bb.WhiteBB&posToBitBoard(4) > 0
-		if correctKingPos && bb.WhiteCanCastleKingSite() && canCastle(wkCastleInBetweenMask) {
+		if correctKingPos && bb.WhiteCanCastleKingSite() && canCastle(wkCastleInMask) {
 			validMoves[i] = wkCastleMove
 			i++
 		}
-		if correctKingPos && bb.WhiteCanCastleQueenSite() && canCastle(wqSideCastleInBetweenMask) {
+		if correctKingPos && bb.WhiteCanCastleQueenSite() && canCastle(wqSideCastleInMask) {
 			validMoves[i] = wqCastleMove
 			i++
 		}
 	} else {
 		correctKingPos := bb.KingBB&bb.BlackBB&posToBitBoard(60) > 0
-		if correctKingPos && bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInBetweenMask) {
+		if correctKingPos && bb.BlackCanCastleKingSite() && canCastle(bkSideCastleInMask) {
 			validMoves[i] = bkCastleMove
 			i++
 		}
-		if correctKingPos && bb.BlackCanCastleQueenSite() && canCastle(bqSideCastleInBetweenMask) {
+		if correctKingPos && bb.BlackCanCastleQueenSite() && canCastle(bqSideCastleInMask) {
 			validMoves[i] = bqCastleMove
 			i++
 		}
