@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type MoveResponse struct {
@@ -51,7 +52,8 @@ func StartServer() {
 				server.Close()
 			} else {
 				board := BoardFromFEN(receivedMessageString)
-				evaluatedBoard := BestMove(board)
+				// No time constraint for web server - use default depth
+				evaluatedBoard := BestMove(board, 0)
 				nextMove = evaluatedBoard.board
 				eval = evaluatedBoard.eval
 

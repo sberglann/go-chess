@@ -68,7 +68,7 @@ func PerformanceTest() {
 	for i, position := range positions {
 		moveStart := time.Now()
 		board := BoardFromFEN(position)
-		BestMove(board)
+		BestMove(board, 0)
 
 		moveElapsed := time.Since(moveStart)
 		println("Position", i, "took", moveElapsed.Milliseconds(), "ms")

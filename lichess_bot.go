@@ -487,7 +487,7 @@ func (bot *LichessBot) handleGame(gameID string) {
 			// Check if it's our turn
 			if (isWhite && currentBoard.Turn() == White) || (!isWhite && currentBoard.Turn() == Black) {
 				log.Printf("It's our turn! Making move from gameFull...")
-				bot.makeBotMove(gameID, currentBoard)
+				bot.makeBotMove(gameID, currentBoard, isWhite, gameFull.State.WTime, gameFull.State.BTime, gameFull.State.WInc, gameFull.State.BInc)
 			} else {
 				log.Printf("Not our turn yet. Waiting for gameState event...")
 			}
@@ -590,7 +590,7 @@ func (bot *LichessBot) handleGame(gameID string) {
 			// If it's our turn, make a move
 			if (isWhite && currentBoard.Turn() == White) || (!isWhite && currentBoard.Turn() == Black) {
 				log.Printf("It's our turn! Current FEN: %s", currentBoard.ToFEN())
-				bot.makeBotMove(gameID, currentBoard)
+				bot.makeBotMove(gameID, currentBoard, isWhite, gameState.WTime, gameState.BTime, gameState.WInc, gameState.BInc)
 			} else {
 				log.Printf("Not our turn. Waiting for opponent's move...")
 			}
@@ -615,11 +615,36 @@ func (bot *LichessBot) handleGame(gameID string) {
 	}
 }
 
-func (bot *LichessBot) makeBotMove(gameID string, board BitBoard) {
+func (bot *LichessBot) makeBotMove(gameID string, board BitBoard, isWhite bool, wtime, btime, winc, binc int) {
 	log.Printf("Calculating best move for game %s...", gameID)
 	
-	// Get the best move
-	evaluatedBoard := BestMove(board)
+	// Calculate available time based on which side we're playing
+	var timeAvailable time.Duration
+	if isWhite {
+		// Use white's time + increment
+		timeMs := wtime + winc
+		// Use 2.5% of available time per move
+		timeAvailable = time.Duration(float64(timeMs)*0.025) * time.Millisecond
+	} else {
+		// Use black's time + increment
+		timeMs := btime + binc
+		// Use 2.5% of available time per move
+		timeAvailable = time.Duration(float64(timeMs)*0.025) * time.Millisecond
+	}
+	
+	// Ensure minimum time (at least 100ms) and maximum time (cap at 30 seconds per move)
+	if timeAvailable < 100*time.Millisecond {
+		timeAvailable = 100 * time.Millisecond
+	}
+	if timeAvailable > 30*time.Second {
+		timeAvailable = 30 * time.Second
+	}
+	
+	log.Printf("Time available: %v (wtime: %dms, btime: %dms, winc: %dms, binc: %dms)", 
+		timeAvailable, wtime, btime, winc, binc)
+	
+	// Get the best move with time constraint
+	evaluatedBoard := BestMove(board, timeAvailable)
 	
 	log.Printf("Best move evaluation: %f", evaluatedBoard.eval)
 	
