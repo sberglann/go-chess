@@ -1,10 +1,11 @@
 package main
 
 import (
-	cache "github.com/sberglann/uint64gocache"
 	"math"
 	"math/rand"
 	"sync"
+
+	cache "github.com/sberglann/uint64gocache"
 )
 
 type EvaluatedBoard struct {
@@ -12,7 +13,7 @@ type EvaluatedBoard struct {
 	eval  float64
 }
 
-const maxDepth = 4
+const maxDepth = 5
 const deterministic = true
 const randomRange = 0
 const useCache = false

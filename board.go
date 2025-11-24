@@ -396,6 +396,11 @@ func BoardFromFEN(fen string) BitBoard {
 		letterIndex := 0
 		file := 1
 		for file <= 8 {
+			// Check bounds before accessing rankLetters
+			if letterIndex >= len(rankLetters) {
+				// If we've run out of characters, the rest of the rank is empty
+				break
+			}
 			pos := CartesianToIndex(rank, file)
 			value := rankLetters[letterIndex]
 			letterIndex += 1

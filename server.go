@@ -85,7 +85,7 @@ func StartServer() {
 	})
 
 	server = &http.Server{
-		Addr:         ":8080",
+		Addr:         ":8081",
 		Handler:      nil,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
