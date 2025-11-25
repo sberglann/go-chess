@@ -78,12 +78,12 @@ func BestMove(board BitBoard) EvaluatedBoard {
 
 func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float64) float64 {
 	if depth == maxDepth {
-		return Eval(board)
+		return Eval(&board)
 	}
 	children, numChildren := GenerateLegalStates(board)
 	var bestEval float64
 	if numChildren == 0 {
-		return Eval(board)
+		return Eval(&board)
 	} else if isWhite {
 		bestEval = -1000.0
 		i := 0

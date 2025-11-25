@@ -4,7 +4,7 @@ import (
 	"math/bits"
 )
 
-func Eval(board BitBoard) float64 {
+func Eval(board *BitBoard) float64 {
 	p := psq(board) / 100
 	m := material(board)
 	score := p + m
@@ -47,7 +47,7 @@ var (
 	PsqKingBlackEarly   = extractPsqScores(psqKing, true, false)
 )
 
-func material(board BitBoard) float64 {
+func material(board *BitBoard) float64 {
 	return float64(bits.OnesCount64(board.WhiteBB&board.PawnBB))*pawnWeight +
 		float64(bits.OnesCount64(board.WhiteBB&board.KnightBB))*knightWeigh +
 		float64(bits.OnesCount64(board.WhiteBB&board.BishopBB))*bishopWeight +
@@ -60,8 +60,8 @@ func material(board BitBoard) float64 {
 		float64(bits.OnesCount64(board.BlackBB&board.QueenBB))*queenWeight
 }
 
-func psq(board BitBoard) float64 {
-	score := func(pieceBoard uint64, psq [64]float64) float64 {
+func psq(board *BitBoard) float64 {
+	score := func(pieceBoard uint64, psq *[64]float64) float64 {
 		var sum float64
 		for pieceBoard > 0 {
 			bit, pb := PopFistBit(pieceBoard)
@@ -71,31 +71,31 @@ func psq(board BitBoard) float64 {
 		return sum
 	}
 	if board.TurnCount() <= 40 {
-		return score(board.WhiteBB&board.PawnBB, PsqPawnWhiteEarly) +
-			score(board.WhiteBB&board.KnightBB, PsqKnightWhiteEarly) +
-			score(board.WhiteBB&board.BishopBB, PsqBishopWhiteEarly) +
-			score(board.WhiteBB&board.RookBB, PsqRookWhiteEarly) +
-			score(board.WhiteBB&board.QueenBB, PsqQueenWhiteEarly) +
-			score(board.WhiteBB&board.KingBB, PsqKingWhiteEarly) -
-			score(board.BlackBB&board.PawnBB, PsqPawnBlackEarly) -
-			score(board.BlackBB&board.KnightBB, PsqKnightBlackEarly) -
-			score(board.BlackBB&board.BishopBB, PsqBishopBlackEarly) -
-			score(board.BlackBB&board.RookBB, PsqRookBlackEarly) -
-			score(board.BlackBB&board.QueenBB, PsqQueenBlackEarly) -
-			score(board.BlackBB&board.KingBB, PsqKingBlackEarly)
+		return score(board.WhiteBB&board.PawnBB, &PsqPawnWhiteEarly) +
+			score(board.WhiteBB&board.KnightBB, &PsqKnightWhiteEarly) +
+			score(board.WhiteBB&board.BishopBB, &PsqBishopWhiteEarly) +
+			score(board.WhiteBB&board.RookBB, &PsqRookWhiteEarly) +
+			score(board.WhiteBB&board.QueenBB, &PsqQueenWhiteEarly) +
+			score(board.WhiteBB&board.KingBB, &PsqKingWhiteEarly) -
+			score(board.BlackBB&board.PawnBB, &PsqPawnBlackEarly) -
+			score(board.BlackBB&board.KnightBB, &PsqKnightBlackEarly) -
+			score(board.BlackBB&board.BishopBB, &PsqBishopBlackEarly) -
+			score(board.BlackBB&board.RookBB, &PsqRookBlackEarly) -
+			score(board.BlackBB&board.QueenBB, &PsqQueenBlackEarly) -
+			score(board.BlackBB&board.KingBB, &PsqKingBlackEarly)
 	} else {
-		return score(board.WhiteBB&board.PawnBB, PsqPawnWhiteLate) +
-			score(board.WhiteBB&board.KnightBB, PsqKnightWhiteLate) +
-			score(board.WhiteBB&board.BishopBB, PsqBishopWhiteLate) +
-			score(board.WhiteBB&board.RookBB, PsqRookWhiteLate) +
-			score(board.WhiteBB&board.QueenBB, PsqQueenWhiteLate) +
-			score(board.WhiteBB&board.KingBB, PsqKingWhiteLate) -
-			score(board.BlackBB&board.PawnBB, PsqPawnBlackLate) -
-			score(board.BlackBB&board.KnightBB, PsqKnightBlackLate) -
-			score(board.BlackBB&board.BishopBB, PsqBishopBlackLate) -
-			score(board.BlackBB&board.RookBB, PsqRookBlackLate) -
-			score(board.BlackBB&board.QueenBB, PsqQueenBlackLate) -
-			score(board.BlackBB&board.KingBB, PsqKingBlackLate)
+		return score(board.WhiteBB&board.PawnBB, &PsqPawnWhiteLate) +
+			score(board.WhiteBB&board.KnightBB, &PsqKnightWhiteLate) +
+			score(board.WhiteBB&board.BishopBB, &PsqBishopWhiteLate) +
+			score(board.WhiteBB&board.RookBB, &PsqRookWhiteLate) +
+			score(board.WhiteBB&board.QueenBB, &PsqQueenWhiteLate) +
+			score(board.WhiteBB&board.KingBB, &PsqKingWhiteLate) -
+			score(board.BlackBB&board.PawnBB, &PsqPawnBlackLate) -
+			score(board.BlackBB&board.KnightBB, &PsqKnightBlackLate) -
+			score(board.BlackBB&board.BishopBB, &PsqBishopBlackLate) -
+			score(board.BlackBB&board.RookBB, &PsqRookBlackLate) -
+			score(board.BlackBB&board.QueenBB, &PsqQueenBlackLate) -
+			score(board.BlackBB&board.KingBB, &PsqKingBlackLate)
 	}
 }
 

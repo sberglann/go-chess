@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"runtime/pprof"
@@ -24,11 +23,18 @@ func Perft() {
 	fmt.Printf("Time: %s\n\n", elapsed)
 }
 
-func PerformanceTest() {
-
-	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-	flag.Parse()
-	f, _ := os.Create(*cpuprofile)
+func PerformanceTest(cpuprofile string) {
+	var f *os.File
+	if cpuprofile != "" {
+		var err error
+		f, err = os.Create(cpuprofile)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	positions := []string{
 		"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
