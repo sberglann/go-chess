@@ -41,7 +41,7 @@ var wkCastleMove = Move{bits: uint32(0xC106)}
 var bkCastleMove = Move{bits: uint32(0xCF3E)}
 var bqCastleMove = Move{bits: uint32(0xCF3A)}
 
-func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
+func GenerateLegalStates(b *BitBoard) ([200]BitBoard, int) {
 	// Theoretically, there is posisble to generate a position where white has 218 legal moves. That will never happen though.
 	var nextStates [200]BitBoard
 	kings := b.KingBB & b.TurnBoard()
@@ -62,8 +62,8 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j := 0
 	m := pawnMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Pawn)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
+		nextState := transition(b, &m, Pawn)
+		if !isChecked(&nextState, currentKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -74,8 +74,8 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = knightMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Knight)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
+		nextState := transition(b, &m, Knight)
+		if !isChecked(&nextState, currentKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -85,8 +85,8 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = bishopMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Bishop)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
+		nextState := transition(b, &m, Bishop)
+		if !isChecked(&nextState, currentKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -96,8 +96,8 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = rookMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Rook)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
+		nextState := transition(b, &m, Rook)
+		if !isChecked(&nextState, currentKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -107,8 +107,8 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = queenMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, Queen)
-		if !isChecked(nextState, currentKingPos, nextState.Turn()) {
+		nextState := transition(b, &m, Queen)
+		if !isChecked(&nextState, currentKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -118,10 +118,10 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = kingMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, King)
+		nextState := transition(b, &m, King)
 		// Since the king move, we'll have to use the next position when looking for checks.
 		newKingPos := m.Destination()
-		if !isChecked(nextState, newKingPos, nextState.Turn()) {
+		if !isChecked(&nextState, newKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -136,9 +136,9 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	j = 0
 	m = castlingMoves[j]
 	for m.bits > 0 {
-		nextState := transition(b, m, King)
+		nextState := transition(b, &m, King)
 		newKingPos := m.Destination()
-		if !isChecked(nextState, newKingPos, nextState.Turn()) {
+		if !isChecked(&nextState, newKingPos, nextState.Turn()) {
 			nextStates[i] = nextState
 			i++
 		}
@@ -153,7 +153,7 @@ func GenerateLegalStates(b BitBoard) ([200]BitBoard, int) {
 	return nextStates, i
 }
 
-func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
+func isChecked(board *BitBoard, kingPos int, kingColor Color) bool {
 	var isCheckByBishopOrQueen, isCheckByRookOrQueen bool
 	var attackingPawnMask uint64
 	var turnBoard uint64
@@ -201,7 +201,7 @@ func isChecked(board BitBoard, kingPos int, kingColor Color) bool {
 	return isCheckByKnight
 }
 
-func transition(b BitBoard, m Move, piece Piece) BitBoard {
+func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 	var capturedPiece Piece
 	var enPassantFile int
 
@@ -243,7 +243,7 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	}
 
 	moveOrPass := func(currentPiece Piece, pieceBB uint64) uint64 {
-		if piece == currentPiece {
+		if currentPiece == piece {
 			return makeMove(pieceBB)
 		} else if capturedPiece == currentPiece {
 			return pieceBB &^ destinationBB
@@ -367,7 +367,7 @@ func transition(b BitBoard, m Move, piece Piece) BitBoard {
 	return res
 }
 
-func kingMoves(bb BitBoard) [8]Move {
+func kingMoves(bb *BitBoard) [8]Move {
 	var validMoves [8]Move
 	kings := bb.KingBB & bb.TurnBoard()
 	i := 0
@@ -376,7 +376,7 @@ func kingMoves(bb BitBoard) [8]Move {
 		kings = newKings
 		moves := kingMovesMapping[pos]
 		for _, m := range moves {
-			if isNotSelfCapture(bb, m) {
+			if isNotSelfCapture(bb, &m) {
 				validMoves[i] = m
 				i++
 			}
@@ -385,7 +385,7 @@ func kingMoves(bb BitBoard) [8]Move {
 	return validMoves
 }
 
-func pawnMoves(bb BitBoard) [32]Move {
+func pawnMoves(bb *BitBoard) [32]Move {
 	var validMoves [32]Move
 	pawns := bb.PawnBB & bb.TurnBoard()
 	i := 0
@@ -402,7 +402,7 @@ func pawnMoves(bb BitBoard) [32]Move {
 	return validMoves
 }
 
-func pawnMovesFromPos(bb BitBoard, origin int) [12]Move {
+func pawnMovesFromPos(bb *BitBoard, origin int) [12]Move {
 	// Should never be possible to generate more than 12 pawn moves (including different promotion options in all directions) from one single pos.
 	var validMoves [12]Move
 	var straight, double, attack, enPassant []Move
@@ -449,13 +449,13 @@ func pawnMovesFromPos(bb BitBoard, origin int) [12]Move {
 		}
 	}
 	for _, m := range attack {
-		if isNotSelfCapture(bb, m) && isCapture(bb, m) {
+		if isNotSelfCapture(bb, &m) && isCapture(bb, &m) {
 			validMoves[i] = m
 			i++
 		}
 	}
 	for _, m := range enPassant {
-		if isValidEnPassantCapture(bb, m) {
+		if isValidEnPassantCapture(bb, &m) {
 			validMoves[i] = m
 			i++
 		}
@@ -464,7 +464,7 @@ func pawnMovesFromPos(bb BitBoard, origin int) [12]Move {
 	return validMoves
 }
 
-func knightMoves(bb BitBoard) [32]Move {
+func knightMoves(bb *BitBoard) [32]Move {
 	var validMoves [32]Move
 	i := 0
 	knights := bb.KnightBB & bb.TurnBoard()
@@ -481,11 +481,11 @@ func knightMoves(bb BitBoard) [32]Move {
 	return validMoves
 }
 
-func knightMovesFromPos(bb BitBoard, origin int) [8]Move {
+func knightMovesFromPos(bb *BitBoard, origin int) [8]Move {
 	var validMoves [8]Move
 	i := 0
 	for _, move := range knightMovesMapping[origin] {
-		if isNotSelfCapture(bb, move) {
+		if isNotSelfCapture(bb, &move) {
 			validMoves[i] = move
 			i++
 		}
@@ -493,7 +493,7 @@ func knightMovesFromPos(bb BitBoard, origin int) [8]Move {
 	return validMoves
 }
 
-func bishopMoves(bb BitBoard) [50]Move {
+func bishopMoves(bb *BitBoard) [50]Move {
 	var validMoves [50]Move
 	bishops := bb.BishopBB & bb.TurnBoard()
 	i := 0
@@ -501,7 +501,7 @@ func bishopMoves(bb BitBoard) [50]Move {
 		pos, newBishops := PopFistBit(bishops)
 		bishops = newBishops
 		for _, move := range bishopMovesFromPos(bb, pos) {
-			if isNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, &move) {
 				if move.bits > 0 {
 					validMoves[i] = move
 					i++
@@ -512,7 +512,7 @@ func bishopMoves(bb BitBoard) [50]Move {
 	return validMoves
 }
 
-func bishopMovesFromPos(bb BitBoard, origin int) [13]Move {
+func bishopMovesFromPos(bb *BitBoard, origin int) [13]Move {
 	var moves [13]Move
 	mask := magicBishopMasks[origin]
 	blockers := mask & (bb.WhiteBB | bb.BlackBB)
@@ -534,7 +534,7 @@ func bishopMovesFromPos(bb BitBoard, origin int) [13]Move {
 	return moves
 }
 
-func rookMoves(bb BitBoard) [50]Move {
+func rookMoves(bb *BitBoard) [50]Move {
 	var validMoves [50]Move
 	rooks := bb.RookBB & bb.TurnBoard()
 	i := 0
@@ -542,7 +542,7 @@ func rookMoves(bb BitBoard) [50]Move {
 		pos, newRooks := PopFistBit(rooks)
 		rooks = newRooks
 		for _, move := range rookMovesFromPos(bb, pos) {
-			if isNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, &move) {
 				if move.bits > 0 {
 					validMoves[i] = move
 					i++
@@ -553,7 +553,7 @@ func rookMoves(bb BitBoard) [50]Move {
 	return validMoves
 }
 
-func rookMovesFromPos(bb BitBoard, origin int) [14]Move {
+func rookMovesFromPos(bb *BitBoard, origin int) [14]Move {
 	var moves [14]Move
 	mask := magicRookMasks[origin]
 	blockers := mask & (bb.WhiteBB | bb.BlackBB)
@@ -575,7 +575,7 @@ func rookMovesFromPos(bb BitBoard, origin int) [14]Move {
 	return moves
 }
 
-func queenMoves(bb BitBoard) [100]Move {
+func queenMoves(bb *BitBoard) [100]Move {
 	var validMoves [100]Move
 	queens := bb.QueenBB & bb.TurnBoard()
 	i := 0
@@ -585,7 +585,7 @@ func queenMoves(bb BitBoard) [100]Move {
 		rook := rookMovesFromPos(bb, origin)
 		bishop := bishopMovesFromPos(bb, origin)
 		for _, move := range rook {
-			if isNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, &move) {
 				if move.bits > 0 {
 					validMoves[i] = move
 					i++
@@ -593,7 +593,7 @@ func queenMoves(bb BitBoard) [100]Move {
 			}
 		}
 		for _, move := range bishop {
-			if isNotSelfCapture(bb, move) {
+			if isNotSelfCapture(bb, &move) {
 				validMoves[i] = move
 				i++
 			}
@@ -602,7 +602,7 @@ func queenMoves(bb BitBoard) [100]Move {
 	return validMoves
 }
 
-func castlingMoves(bb BitBoard) [2]Move {
+func castlingMoves(bb *BitBoard) [2]Move {
 	canCastle := func(inBetweenSquares uint64) bool {
 		if (bb.WhiteBB|bb.BlackBB)&inBetweenSquares == 0 {
 			for inBetweenSquares > 0 {
@@ -643,15 +643,15 @@ func castlingMoves(bb BitBoard) [2]Move {
 	return validMoves
 }
 
-func isNotSelfCapture(bb BitBoard, m Move) bool {
+func isNotSelfCapture(bb *BitBoard, m *Move) bool {
 	return bb.TurnBoard()&posToBitBoard(m.Destination()) == 0
 }
 
-func isCapture(bb BitBoard, m Move) bool {
+func isCapture(bb *BitBoard, m *Move) bool {
 	return bb.OppositeTurnBoard()&posToBitBoard(m.Destination()) > 0
 }
 
-func isValidEnPassantCapture(bb BitBoard, m Move) bool {
+func isValidEnPassantCapture(bb *BitBoard, m *Move) bool {
 	destinationFile := (m.Destination() % 8) + 1
 	if bb.DoublePawnMoveFile() == destinationFile {
 		EnPassantCounter += 1

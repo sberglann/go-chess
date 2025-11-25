@@ -4,8 +4,6 @@ import (
 	"math"
 	"math/rand"
 	"sync"
-
-	cache "github.com/sberglann/uint64gocache"
 )
 
 type EvaluatedBoard struct {
@@ -16,12 +14,8 @@ type EvaluatedBoard struct {
 const maxDepth = 5
 const deterministic = true
 const randomRange = 0
-const useCache = false
 
-var upperMemo = cache.New()
-var lowerMemo = cache.New()
-
-func BestMove(board BitBoard) EvaluatedBoard {
+func BestMove(board *BitBoard) EvaluatedBoard {
 	var bestMove BitBoard
 	var bestEval float64
 
@@ -37,7 +31,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			guard <- struct{}{}
 			go func(j int, b BitBoard) {
 				defer wg.Done()
-				eval := minimax(b, 1, false, -1000.0, 1000.0)
+				eval := minimax(&b, 1, false, -1000.0, 1000.0)
 				evals[j] = EvaluatedBoard{b, eval * randomFactor()}
 				<-guard
 			}(i, legalMoves[i])
@@ -57,7 +51,7 @@ func BestMove(board BitBoard) EvaluatedBoard {
 			guard <- struct{}{}
 			go func(j int, b BitBoard) {
 				defer wg.Done()
-				eval := minimax(b, 1, true, -1000.0, 1000.0)
+				eval := minimax(&b, 1, true, -1000.0, 1000.0)
 				evals[j] = EvaluatedBoard{b, eval * randomFactor()}
 				<-guard
 			}(i, legalMoves[i])
@@ -76,20 +70,20 @@ func BestMove(board BitBoard) EvaluatedBoard {
 	return EvaluatedBoard{bestMove, bestEval}
 }
 
-func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float64) float64 {
+func minimax(board *BitBoard, depth int, isWhite bool, alpha float64, beta float64) float64 {
 	if depth == maxDepth {
-		return Eval(&board)
+		return Eval(board)
 	}
 	children, numChildren := GenerateLegalStates(board)
 	var bestEval float64
 	if numChildren == 0 {
-		return Eval(&board)
+		return Eval(board)
 	} else if isWhite {
 		bestEval = -1000.0
 		i := 0
 		child := children[i]
 		for child.WhiteBB > 0 {
-			currentEval := minimax(child, depth+1, false, alpha, beta)
+			currentEval := minimax(&child, depth+1, false, alpha, beta)
 			bestEval = math.Max(bestEval, currentEval)
 			alpha = math.Max(alpha, bestEval)
 			if beta <= alpha {
@@ -103,7 +97,7 @@ func minimax(board BitBoard, depth int, isWhite bool, alpha float64, beta float6
 		i := 0
 		child := children[i]
 		for child.WhiteBB > 0 {
-			currentEval := minimax(child, depth+1, true, alpha, beta)
+			currentEval := minimax(&child, depth+1, true, alpha, beta)
 			bestEval = math.Min(bestEval, currentEval)
 			beta = math.Min(beta, bestEval)
 			if beta <= alpha {

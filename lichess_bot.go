@@ -619,12 +619,12 @@ func (bot *LichessBot) makeBotMove(gameID string, board BitBoard) {
 	log.Printf("Calculating best move for game %s...", gameID)
 	
 	// Get the best move
-	evaluatedBoard := BestMove(board)
+	evaluatedBoard := BestMove(&board)
 	
 	log.Printf("Best move evaluation: %f", evaluatedBoard.eval)
 	
 	// Find the move that transforms current board to the best move board
-	move, found := FindMoveBetweenBoards(board, evaluatedBoard.board)
+	move, found := FindMoveBetweenBoards(&board, &evaluatedBoard.board)
 	if !found {
 		log.Printf("Could not find move between boards in game %s", gameID)
 		log.Printf("From board FEN: %s", board.ToFEN())
@@ -632,12 +632,12 @@ func (bot *LichessBot) makeBotMove(gameID string, board BitBoard) {
 		
 		// Fallback: generate all legal moves and pick the first one
 		// This shouldn't happen, but it's a safety net
-		legalMoves, numMoves := GenerateLegalStates(board)
+		legalMoves, numMoves := GenerateLegalStates(&board)
 		if numMoves > 0 {
 			log.Printf("Fallback: using first legal move out of %d moves", numMoves)
 			// Find the move that leads to the first legal state
 			firstLegalBoard := legalMoves[0]
-			move, found = FindMoveBetweenBoards(board, firstLegalBoard)
+			move, found = FindMoveBetweenBoards(&board, &firstLegalBoard)
 			if !found {
 				log.Printf("Even fallback failed! This is unexpected.")
 				return

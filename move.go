@@ -18,7 +18,7 @@ type Move struct {
 	bits uint32
 }
 
-func (m Move) toAlgebraicNotation() []string {
+func (m *Move) toAlgebraicNotation() []string {
 	if !m.IsCastleMove() {
 		o := IndexToAlgebraic[m.Origin()]
 		d := IndexToAlgebraic[m.Destination()]
@@ -43,26 +43,26 @@ func (m Move) toAlgebraicNotation() []string {
 	}
 }
 
-func (m Move) Destination() int {
+func (m *Move) Destination() int {
 	return int(m.bits & 0x3F)
 }
-func (m Move) IsDoublePawnMove() bool {
+func (m *Move) IsDoublePawnMove() bool {
 	return m.bits&0xC000 == 0x8000
 }
 
-func (m Move) IsEnPassantMove() bool {
+func (m *Move) IsEnPassantMove() bool {
 	return m.bits&0x10000 > 0
 }
 
-func (m Move) IsCastleMove() bool {
+func (m *Move) IsCastleMove() bool {
 	return m.bits&0xC000 == 0xC000
 }
 
-func (m Move) Origin() int {
+func (m *Move) Origin() int {
 	return int(m.bits & 0xFC0 >> 6)
 }
 
-func (m Move) Promotion() Piece {
+func (m *Move) Promotion() Piece {
 	if value := m.bits & 0xF000; value < 12 {
 		return Empty
 	} else if value == 12 {
@@ -110,7 +110,7 @@ func (m Move) ToUCI() string {
 
 // FindMoveBetweenBoards finds the Move that transforms fromBoard to toBoard
 // Returns the move and true if found, or an empty move and false if not found
-func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
+func FindMoveBetweenBoards(fromBoard *BitBoard, toBoard *BitBoard) (Move, bool) {
 	// Get all legal moves with their piece types
 	pawnMovesList := pawnMoves(fromBoard)
 	knightMovesList := knightMoves(fromBoard)
@@ -123,8 +123,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check pawn moves
 	for _, move := range pawnMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, Pawn)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, Pawn)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -133,8 +133,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check knight moves
 	for _, move := range knightMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, Knight)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, Knight)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -143,8 +143,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check bishop moves
 	for _, move := range bishopMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, Bishop)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, Bishop)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -153,8 +153,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check rook moves
 	for _, move := range rookMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, Rook)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, Rook)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -163,8 +163,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check queen moves
 	for _, move := range queenMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, Queen)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, Queen)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -173,8 +173,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check king moves
 	for _, move := range kingMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, King)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, King)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -183,8 +183,8 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 	// Check castling moves (also use King as piece type)
 	for _, move := range castlingMovesList {
 		if move.bits > 0 {
-			testBoard := transition(fromBoard, move, King)
-			if boardsEqual(testBoard, toBoard) {
+			testBoard := transition(fromBoard, &move, King)
+			if boardsEqual(&testBoard, toBoard) {
 				return move, true
 			}
 		}
@@ -194,7 +194,7 @@ func FindMoveBetweenBoards(fromBoard BitBoard, toBoard BitBoard) (Move, bool) {
 }
 
 // boardsEqual checks if two BitBoards are equal
-func boardsEqual(b1, b2 BitBoard) bool {
+func boardsEqual(b1 *BitBoard, b2 *BitBoard) bool {
 	return b1.WhiteBB == b2.WhiteBB &&
 		b1.BlackBB == b2.BlackBB &&
 		b1.PawnBB == b2.PawnBB &&
@@ -250,28 +250,28 @@ func UCIToMove(board BitBoard, uciMove string) (Move, bool) {
 	var moves []Move
 	switch pieceInfo.piece {
 	case Pawn:
-		pm := pawnMovesFromPos(board, originIdx)
+		pm := pawnMovesFromPos(&board, originIdx)
 		moves = pm[:]
 	case Knight:
-		km := knightMovesFromPos(board, originIdx)
+		km := knightMovesFromPos(&board, originIdx)
 		moves = km[:]
 	case Bishop:
-		bm := bishopMovesFromPos(board, originIdx)
+		bm := bishopMovesFromPos(&board, originIdx)
 		moves = bm[:]
 	case Rook:
-		rm := rookMovesFromPos(board, originIdx)
+		rm := rookMovesFromPos(&board, originIdx)
 		moves = rm[:]
 	case Queen:
 		// Queen moves are bishop + rook moves from the same position
-		bm := bishopMovesFromPos(board, originIdx)
-		rm := rookMovesFromPos(board, originIdx)
+		bm := bishopMovesFromPos(&board, originIdx)
+		rm := rookMovesFromPos(&board, originIdx)
 		moves = append(bm[:], rm[:]...)
 	case King:
 		// Check regular king moves first
-		km := kingMoves(board)
+		km := kingMoves(&board)
 		moves = km[:]
 		// Also check castling moves
-		cm := castlingMoves(board)
+		cm := castlingMoves(&board)
 		moves = append(moves, cm[:]...)
 	}
 	
@@ -301,5 +301,5 @@ func ApplyUCIMove(board BitBoard, uciMove string) (BitBoard, bool) {
 	}
 	
 	// Apply the move
-	return transition(board, move, pieceAtOrigin.piece), true
+	return transition(&board, &move, pieceAtOrigin.piece), true
 }

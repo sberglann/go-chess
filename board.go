@@ -45,7 +45,7 @@ var StartBoard = BitBoard{
 	Flags:    uint32(0x000001FE),
 }
 
-func (b BitBoard) Hash(depth int) uint64 {
+func (b *BitBoard) Hash(depth int) uint64 {
 	combine := func(a uint64, b uint64) uint64 {
 		return a + 0x9e3779b9 + (b << 6) + (a >> 2)
 	}
@@ -62,11 +62,11 @@ func (b BitBoard) Hash(depth int) uint64 {
 	return h
 }
 
-func (b BitBoard) TurnCount() int {
+func (b *BitBoard) TurnCount() int {
 	return int(b.Flags >> 17)
 }
 
-func (b BitBoard) TurnBoard() uint64 {
+func (b *BitBoard) TurnBoard() uint64 {
 	if b.Turn() == White {
 		return b.WhiteBB
 	} else {
@@ -74,7 +74,7 @@ func (b BitBoard) TurnBoard() uint64 {
 	}
 }
 
-func (b BitBoard) OppositeTurnBoard() uint64 {
+func (b *BitBoard) OppositeTurnBoard() uint64 {
 	if b.Turn() == White {
 		return b.BlackBB
 	} else {
@@ -82,7 +82,7 @@ func (b BitBoard) OppositeTurnBoard() uint64 {
 	}
 }
 
-func (b BitBoard) Turn() Color {
+func (b *BitBoard) Turn() Color {
 	if BitAt32(b.Flags, 0) {
 		return Black
 	} else {
@@ -90,7 +90,7 @@ func (b BitBoard) Turn() Color {
 	}
 }
 
-func (b BitBoard) OppositeTurn() Color {
+func (b *BitBoard) OppositeTurn() Color {
 	if b.Turn() == White {
 		return Black
 	} else {
@@ -98,7 +98,7 @@ func (b BitBoard) OppositeTurn() Color {
 	}
 }
 
-func (b BitBoard) DoublePawnMoveFile() int {
+func (b *BitBoard) DoublePawnMoveFile() int {
 	if value := b.Flags >> 1 & 0xF; value > 8 || value < 1 {
 		return -1
 	} else {
@@ -106,23 +106,23 @@ func (b BitBoard) DoublePawnMoveFile() int {
 	}
 }
 
-func (b BitBoard) WhiteCanCastleKingSite() bool {
+func (b *BitBoard) WhiteCanCastleKingSite() bool {
 	return b.Flags&(uint32(1)<<6) > 0
 }
 
-func (b BitBoard) WhiteCanCastleQueenSite() bool {
+func (b *BitBoard) WhiteCanCastleQueenSite() bool {
 	return b.Flags&(uint32(1)<<7) > 0
 }
 
-func (b BitBoard) BlackCanCastleKingSite() bool {
+func (b *BitBoard) BlackCanCastleKingSite() bool {
 	return b.Flags&(uint32(1)<<8) > 0
 }
 
-func (b BitBoard) BlackCanCastleQueenSite() bool {
+func (b *BitBoard) BlackCanCastleQueenSite() bool {
 	return b.Flags&(uint32(1)<<9) > 0
 }
 
-func (b BitBoard) IsEmpty(pos int) bool {
+func (b *BitBoard) IsEmpty(pos int) bool {
 	if pos > 0 {
 		return posToBitBoard(pos)&(b.WhiteBB|b.BlackBB) == 0
 	} else {
@@ -130,7 +130,7 @@ func (b BitBoard) IsEmpty(pos int) bool {
 	}
 }
 
-func (b BitBoard) PieceAt(pos int) ColoredPiece {
+func (b *BitBoard) PieceAt(pos int) ColoredPiece {
 	isPopulated := func(bb uint64, pos int) bool {
 		return (bb & (uint64(1) << pos)) > 0
 	}

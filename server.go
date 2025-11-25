@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type MoveResponse struct {
@@ -51,13 +52,13 @@ func StartServer() {
 				server.Close()
 			} else {
 				board := BoardFromFEN(receivedMessageString)
-				evaluatedBoard := BestMove(board)
+				evaluatedBoard := BestMove(&board)
 				nextMove = evaluatedBoard.board
 				eval = evaluatedBoard.eval
 
 			}
 
-			legalMoves, _ := GenerateLegalStates(nextMove)
+			legalMoves, _ := GenerateLegalStates(&nextMove)
 
 			for _, move := range legalMoves {
 				lmr := extractLegalMoveResponse(nextMove, move)

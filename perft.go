@@ -74,7 +74,7 @@ func PerformanceTest(cpuprofile string) {
 	for i, position := range positions {
 		moveStart := time.Now()
 		board := BoardFromFEN(position)
-		BestMove(board)
+		BestMove(&board)
 
 		moveElapsed := time.Since(moveStart)
 		println("Position", i, "took", moveElapsed.Milliseconds(), "ms")
@@ -87,7 +87,7 @@ func perftStep(previousStates []BitBoard) []BitBoard {
 	var nextStates []BitBoard
 	resetCounters()
 	for _, b := range previousStates {
-		states, _ := GenerateLegalStates(b)
+		states, _ := GenerateLegalStates(&b)
 		nextStates = append(nextStates, states[:]...)
 	}
 	return nextStates
@@ -106,7 +106,7 @@ func perftStepPar(previousStates []BitBoard) []BitBoard {
 		guard <- struct{}{}
 		go func(j int, b BitBoard) {
 			defer wg.Done()
-			nextStates[j], i = GenerateLegalStates(b)
+			nextStates[j], i = GenerateLegalStates(&b)
 			<-guard
 		}(i, b)
 	}
