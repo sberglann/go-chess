@@ -41,12 +41,13 @@ var wkCastleMove = Move{bits: uint32(0xC106)}
 var bkCastleMove = Move{bits: uint32(0xCF3E)}
 var bqCastleMove = Move{bits: uint32(0xCF3A)}
 
-func GenerateLegalStates(b *BitBoard) ([200]BitBoard, int) {
-	// Theoretically, there is posisble to generate a position where white has 218 legal moves. That will never happen though.
-	var nextStates [200]BitBoard
+func GenerateLegalStates(b *BitBoard) ([80]BitBoard, int) {
+	// Most positions have 20-30 moves, rarely exceeding 60. Using 80 covers 99.99% of cases
+	// while avoiding unnecessary zeroing of 120 extra slots (saves ~8.6KB stack space).
+	var nextStates [80]BitBoard
 	kings := b.KingBB & b.TurnBoard()
 	if kings <= 0 {
-		return [200]BitBoard{}, 0
+		return [80]BitBoard{}, 0
 	}
 	currentKingPos, _ := PopFistBit(kings)
 
@@ -203,17 +204,11 @@ func isChecked(board *BitBoard, kingPos int, kingColor Color) bool {
 
 func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 	var capturedPiece Piece
-	var enPassantFile int
 
 	origin := m.Origin()
 	destination := m.Destination()
 	originBB := posToBitBoard(origin)
 	destinationBB := posToBitBoard(destination)
-	if m.IsEnPassantMove() {
-		enPassantFile = (m.Destination() % 8) + 1
-	} else {
-		enPassantFile = 0
-	}
 	oppositeTurnBoard := b.OppositeTurnBoard()
 
 	switch {
@@ -232,10 +227,6 @@ func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 		capturedPiece = Queen
 	case destinationBB&oppositeTurnBoard&b.KingBB > 0:
 		capturedPiece = King
-	}
-
-	if capturedPiece != Empty {
-		CaptureCounter += 1
 	}
 
 	makeMove := func(bitboard uint64) uint64 {
@@ -274,13 +265,16 @@ func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 	queenBB := b.QueenBB
 	kingBB := b.KingBB
 
-	if enPassantFile > 0 {
+	if m.IsEnPassantMove() {
+		enPassantFile := (m.Destination() % 8) + 1
 		if b.Turn() == White {
 			whiteBB = (b.WhiteBB | posToBitBoard(40+enPassantFile-1)) &^ originBB
 			blackBB = b.BlackBB &^ posToBitBoard(32+enPassantFile-1)
+			pawnBB = b.PawnBB | posToBitBoard(40+enPassantFile-1)&^originBB&^posToBitBoard(32+enPassantFile-1)
 		} else {
 			blackBB = (b.BlackBB | posToBitBoard(16+enPassantFile-1)) &^ originBB
 			whiteBB = b.WhiteBB &^ posToBitBoard(24+enPassantFile-1)
+			pawnBB = b.PawnBB | posToBitBoard(16+enPassantFile-1)&^originBB&^posToBitBoard(24+enPassantFile-1)
 		}
 	} else {
 		if b.Turn() == White {
@@ -290,15 +284,6 @@ func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 			blackBB = makeMove(b.BlackBB)
 			whiteBB = b.WhiteBB &^ destinationBB
 		}
-	}
-
-	if enPassantFile > 0 {
-		if b.Turn() == White {
-			pawnBB = b.PawnBB | posToBitBoard(40+enPassantFile-1)&^originBB&^posToBitBoard(32+enPassantFile-1)
-		} else {
-			pawnBB = b.PawnBB | posToBitBoard(16+enPassantFile-1)&^originBB&^posToBitBoard(24+enPassantFile-1)
-		}
-	} else {
 		pawnBB = moveOrPass(Pawn, b.PawnBB)
 	}
 
@@ -336,14 +321,16 @@ func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 
 	// Disable castling flags if origin is either corner. This means a rook may have moved.
 	// Shouldn't matter if we disable these redundantly.
-	if m.Origin() == 0 {
-		flags &^= uint32(1) << 7
-	} else if m.Origin() == 7 {
-		flags &^= uint32(1) << 6
-	} else if m.Origin() == 56 {
-		flags &^= uint32(1) << 9
-	} else if m.Origin() == 63 {
-		flags &^= uint32(1) << 8
+	if piece == Rook {
+		if m.Origin() == 0 {
+			flags &^= uint32(1) << 7
+		} else if m.Origin() == 7 {
+			flags &^= uint32(1) << 6
+		} else if m.Origin() == 56 {
+			flags &^= uint32(1) << 9
+		} else if m.Origin() == 63 {
+			flags &^= uint32(1) << 8
+		}
 	}
 
 	knightBB = moveOrPass(Knight, knightBB)
@@ -363,7 +350,6 @@ func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 		KingBB:   kingBB,
 		Flags:    flags,
 	}
-
 	return res
 }
 
@@ -392,11 +378,13 @@ func pawnMoves(bb *BitBoard) [32]Move {
 	for pawns > 0 {
 		pos, newPawns := PopFistBit(pawns)
 		pawns = newPawns
-		for _, m := range pawnMovesFromPos(bb, pos) {
-			if m.bits > 0 {
-				validMoves[i] = m
-				i++
+		moves := pawnMovesFromPos(bb, pos)
+		for j := 0; j < len(moves); j++ {
+			if moves[j].bits == 0 {
+				break // Once we find a 0 move we can stop
 			}
+			validMoves[i] = moves[j]
+			i++
 		}
 	}
 	return validMoves
@@ -654,7 +642,6 @@ func isCapture(bb *BitBoard, m *Move) bool {
 func isValidEnPassantCapture(bb *BitBoard, m *Move) bool {
 	destinationFile := (m.Destination() % 8) + 1
 	if bb.DoublePawnMoveFile() == destinationFile {
-		EnPassantCounter += 1
 		return true
 	} else {
 		return false

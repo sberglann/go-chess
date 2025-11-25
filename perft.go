@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-var EnPassantCounter int
-var CaptureCounter int
-var CheckMateCounter int
-
 func Perft() {
 	start := time.Now()
 	// TODO: Investigate why black can't castle in step two of case 10.
@@ -85,7 +81,6 @@ func PerformanceTest(cpuprofile string) {
 
 func perftStep(previousStates []BitBoard) []BitBoard {
 	var nextStates []BitBoard
-	resetCounters()
 	for _, b := range previousStates {
 		states, _ := GenerateLegalStates(&b)
 		nextStates = append(nextStates, states[:]...)
@@ -94,14 +89,13 @@ func perftStep(previousStates []BitBoard) []BitBoard {
 }
 
 func perftStepPar(previousStates []BitBoard) []BitBoard {
-	var nextStates = make([][200]BitBoard, len(previousStates))
+	var nextStates = make([][80]BitBoard, len(previousStates))
 
 	maxRoutines := 16
 	guard := make(chan struct{}, maxRoutines)
 
 	var wg sync.WaitGroup
 	wg.Add(len(previousStates))
-	resetCounters()
 	for i, b := range previousStates {
 		guard <- struct{}{}
 		go func(j int, b BitBoard) {
@@ -118,12 +112,6 @@ func perftStepPar(previousStates []BitBoard) []BitBoard {
 	}
 
 	return nextStatesFlat
-}
-
-func resetCounters() {
-	EnPassantCounter = 0
-	CaptureCounter = 0
-	CheckMateCounter = 0
 }
 
 type PerftTestCase struct {
