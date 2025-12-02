@@ -52,7 +52,7 @@ func StartServer() {
 				server.Close()
 			} else {
 				board := BoardFromFEN(receivedMessageString)
-				evaluatedBoard := BestMove(&board)
+				evaluatedBoard := BestMoveWithoutTimeLimit(&board)
 				nextMove = evaluatedBoard.board
 				eval = evaluatedBoard.eval
 
@@ -86,7 +86,7 @@ func StartServer() {
 	})
 
 	server = &http.Server{
-		Addr:         ":8081",
+		Addr:         ":8080",
 		Handler:      nil,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,

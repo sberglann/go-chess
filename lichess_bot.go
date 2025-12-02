@@ -619,7 +619,7 @@ func (bot *LichessBot) makeBotMove(gameID string, board BitBoard) {
 	log.Printf("Calculating best move for game %s...", gameID)
 	
 	// Get the best move
-	evaluatedBoard := BestMove(&board)
+	evaluatedBoard := BestMoveWithoutTimeLimit(&board)
 	
 	log.Printf("Best move evaluation: %f", evaluatedBoard.eval)
 	

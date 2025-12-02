@@ -20,7 +20,6 @@ func main() {
 	
 	// Parse flags once
 	flag.Parse()
-
 	if *benchFlag {
 		log.Println("Running performance test...")
 		PerformanceTest(*cpuprofileFlag)

@@ -246,6 +246,29 @@ func UCIToMove(board BitBoard, uciMove string) (Move, bool) {
 		return Move{}, false
 	}
 	
+	// Special handling for castling moves: detect by king origin and castling destination
+	// This is needed because castling rights might be lost when reconstructing from moves
+	if pieceInfo.piece == King {
+		// Check if this looks like a castling move
+		// White: e1->g1 (kingside) or e1->c1 (queenside)
+		// Black: e8->g8 (kingside) or e8->c8 (queenside)
+		if (originIdx == 4 && destIdx == 6) || // White kingside
+		   (originIdx == 4 && destIdx == 2) || // White queenside
+		   (originIdx == 60 && destIdx == 62) || // Black kingside
+		   (originIdx == 60 && destIdx == 58) { // Black queenside
+			// This is a castling move - return the appropriate castling move
+			if originIdx == 4 && destIdx == 6 {
+				return wkCastleMove, true
+			} else if originIdx == 4 && destIdx == 2 {
+				return wqCastleMove, true
+			} else if originIdx == 60 && destIdx == 62 {
+				return bkCastleMove, true
+			} else if originIdx == 60 && destIdx == 58 {
+				return bqCastleMove, true
+			}
+		}
+	}
+	
 	// Generate moves from the specific origin square based on piece type
 	var moves []Move
 	switch pieceInfo.piece {
@@ -270,7 +293,7 @@ func UCIToMove(board BitBoard, uciMove string) (Move, bool) {
 		// Check regular king moves first
 		km := kingMoves(&board)
 		moves = km[:]
-		// Also check castling moves
+		// Also check castling moves (in case castling rights still exist)
 		cm := castlingMoves(&board)
 		moves = append(moves, cm[:]...)
 	}

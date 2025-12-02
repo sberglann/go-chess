@@ -70,7 +70,7 @@ func PerformanceTest(cpuprofile string) {
 	for i, position := range positions {
 		moveStart := time.Now()
 		board := BoardFromFEN(position)
-		BestMove(&board)
+		BestMoveWithoutTimeLimit(&board)
 
 		moveElapsed := time.Since(moveStart)
 		println("Position", i, "took", moveElapsed.Milliseconds(), "ms")

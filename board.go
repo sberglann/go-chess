@@ -45,7 +45,7 @@ var StartBoard = BitBoard{
 	Flags:    uint32(0x000001FE),
 }
 
-func (b *BitBoard) Hash(depth int) uint64 {
+func (b *BitBoard) Hash() uint64 {
 	combine := func(a uint64, b uint64) uint64 {
 		return a + 0x9e3779b9 + (b << 6) + (a >> 2)
 	}
@@ -58,7 +58,8 @@ func (b *BitBoard) Hash(depth int) uint64 {
 	h = combine(h, MurmurHash(b.RookBB))
 	h = combine(h, MurmurHash(b.QueenBB))
 	h = combine(h, MurmurHash(b.KingBB))
-	h = combine(h, MurmurHash(uint64(depth)))
+	// Include Flags (bits 0-9: turn, en passant, castling) but exclude move counters (bits 10-24)
+	h = combine(h, MurmurHash(uint64(b.Flags & 0x3FF )))
 	return h
 }
 

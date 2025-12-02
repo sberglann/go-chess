@@ -31,10 +31,10 @@ var whitePawnAttackMasks = WhitePawnAttackMasks()
 var blackPawnAttackMasks = BlackPawnAttackMasks()
 
 // Castling empty square checks
-var wqSideCastleInMask = posToBitBoard(1) | posToBitBoard(2) | posToBitBoard(3) | posToBitBoard(4)
-var wkCastleInMask = posToBitBoard(4) | posToBitBoard(5) | posToBitBoard(6)
-var bqSideCastleInMask = posToBitBoard(57) | posToBitBoard(58) | posToBitBoard(59) | posToBitBoard(60)
-var bkSideCastleInMask = posToBitBoard(60) |posToBitBoard(61) | posToBitBoard(62)
+var wqSideCastleInMask = posToBitBoard(1) | posToBitBoard(2) | posToBitBoard(3) 
+var wkCastleInMask = posToBitBoard(5) | posToBitBoard(6) 
+var bqSideCastleInMask = posToBitBoard(57) | posToBitBoard(58) | posToBitBoard(59) 
+var bkSideCastleInMask = posToBitBoard(61) | posToBitBoard(62)
 
 var wqCastleMove = Move{bits: uint32(0xC102)}
 var wkCastleMove = Move{bits: uint32(0xC106)}
@@ -329,6 +329,20 @@ func transition(b *BitBoard, m *Move, piece Piece) BitBoard {
 		} else if m.Origin() == 56 {
 			flags &^= uint32(1) << 9
 		} else if m.Origin() == 63 {
+			flags &^= uint32(1) << 8
+		}
+	}
+	
+	// Disable castling flags if a rook is captured on a corner square
+	if capturedPiece == Rook {
+		switch destination {
+		case 0:
+			flags &^= uint32(1) << 7
+		case 7:
+			flags &^= uint32(1) << 6
+		case 56:
+			flags &^= uint32(1) << 9
+		case 63:
 			flags &^= uint32(1) << 8
 		}
 	}
