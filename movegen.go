@@ -197,6 +197,11 @@ func isChecked(board *BitBoard, kingPos int, kingColor Color) bool {
 		}
 	}
 
+	isCheckByKing := kingMasks[kingPos]&board.KingBB&turnBoard > 0
+	if isCheckByKing {
+		return true
+	}
+
 	isCheckByKnight := knightMasks[kingPos]&board.KnightBB&turnBoard > 0
 
 	return isCheckByKnight
